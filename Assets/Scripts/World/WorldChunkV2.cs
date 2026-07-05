@@ -1,7 +1,5 @@
 using System.Collections.Generic;
-using Unity.Burst;
 using Unity.Collections;
-using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -10,7 +8,7 @@ namespace World
 {
     public class WorldChunkV2 : MonoBehaviour
     {
-        public const int CHUNK_SIZE = 16;
+        public const int ChunkSize = 16;
 
         #region Inspector Properties
 
@@ -25,41 +23,55 @@ namespace World
 
         #endregion
 
-        private void Awake()
-        {
-            _meshFilter = GetComponent<MeshFilter>();
-            _meshRenderer = GetComponent<MeshRenderer>();
-            _meshFilter.mesh = BuildChunk();
-        }
-
         struct Vertex
         {
-            public float3 pos;
-            public float3 normal;
-            public float2 uv;
+            public float3 Position;
+            public float3 Normal;
+            public float2 UV;
         }
 
+        // Hardcoded direction of each face in the cube
         static readonly int3[] FaceNormals = {
             new (1,0,0), new (-1,0,0),
             new (0,1,0), new (0,-1,0),
             new (0,0,1), new (0,0,-1)
         };
 
-        void Start()
+        private void Awake()
         {
-            GetComponent<MeshFilter>().mesh = BuildChunk();
+            _meshFilter = GetComponent<MeshFilter>();
+            _meshRenderer = GetComponent<MeshRenderer>();
         }
 
-        bool IsInterior(int x, int y, int z)
+        private void OnEnable()
         {
-            return x > 0 && x < CHUNK_SIZE - 1 &&
-                   y > 0 && y < CHUNK_SIZE - 1 &&
-                   z > 0 && z < CHUNK_SIZE - 1;
+            var channel = EventsChannel.Instance;
+            if (channel)
+                channel.OnChunkChanged += OnChunkChanged;
         }
 
-        bool InChunk(int x, int y, int z) => x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE;
+        private void OnDisable()
+        {
+            var channel = EventsChannel.Instance;
+            if (channel)
+                channel.OnChunkChanged -= OnChunkChanged;
+        }
 
-        Mesh BuildChunk()
+        private void OnChunkChanged(ChunkData chunk)
+        {
+            var chunkCoords = chunk.Position;
+            var currentCoords = new int3((int)transform.position.x, (int)transform.position.y, (int)transform.position.z);
+
+            if (!currentCoords.Equals(chunkCoords))
+                return;
+
+            _meshFilter.mesh = BuildChunk(chunk);
+        }
+
+
+        bool InChunk(int x, int y, int z, in ChunkData chunk) => x >= 0 && x < ChunkSize && y >= 0 && y < ChunkSize && z >= 0 && z < ChunkSize;
+
+        Mesh BuildChunk(in ChunkData chunk)
         {
             var md = GetMeshData();
 
@@ -84,7 +96,7 @@ namespace World
             md.Indices.Dispose(); // not needed anymore
 
             // Build cube occupancy (all filled for this example)
-            bool Occupied(int x, int y, int z) => InChunk(x, y, z);
+            bool Occupied(int x, int y, int z, in ChunkData chunk) => InChunk(x, y, z, chunk);
 
             // Vertex buffer layout:
             // c = cube, f = face
@@ -105,11 +117,11 @@ namespace World
             // First pass: count total verts/indices needed
             int totalVerts = 0;
             int totalIndices = 0;
-            for (var x = 0; x < CHUNK_SIZE; x++)
-            for (var y = 0; y < CHUNK_SIZE; y++)
-            for (var z = 0; z < CHUNK_SIZE; z++)
+            for (var x = 0; x < ChunkSize; x++)
+            for (var y = 0; y < ChunkSize; y++)
+            for (var z = 0; z < ChunkSize; z++)
             {
-                if (!Occupied(x, y, z)) continue;
+                if (!Occupied(x, y, z, chunk)) continue;
                 // TODO we could optimize the vertex buffer by storing one cube if ANY face is visible, and then
                 // only pushing the visible faces to the index buffer
                 for (var f = 0; f < 6; f++)
@@ -117,7 +129,7 @@ namespace World
                     // Use FaceNormals to check neighbors: Get the normal of the current face, and check if the
                     // cell in that direction has something
                     int3 n = FaceNormals[f];
-                    if (!Occupied(x + n.x, y + n.y, z + n.z))
+                    if (!Occupied(x + n.x, y + n.y, z + n.z, chunk))
                     {
                         // We assume we will use all vertices and indices of this cube.
                         totalVerts += md.VertCount;
@@ -145,11 +157,11 @@ namespace World
             // vCursor: next available vertex position
             // iCursor: next available index position
             int vCursor = 0, iCursor = 0;
-            for (int x = 0; x < CHUNK_SIZE; x++)
-            for (int y = 0; y < CHUNK_SIZE; y++)
-            for (int z = 0; z < CHUNK_SIZE; z++)
+            for (int x = 0; x < ChunkSize; x++)
+            for (int y = 0; y < ChunkSize; y++)
+            for (int z = 0; z < ChunkSize; z++)
             {
-                if (!Occupied(x, y, z)) continue;
+                if (!Occupied(x, y, z, chunk)) continue;
                 float3 position = new float3(x, y, z);
 
                 for (int f = 0; f < 6; f++)
@@ -157,7 +169,7 @@ namespace World
                     int3 n = FaceNormals[f];
 
                     // Like before, we skip if this face has neighbors
-                    if (Occupied(x + n.x, y + n.y, z + n.z)) continue;
+                    if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
 
                     // vBase: where this face's vertices start
                     int vBase = vCursor;
@@ -166,9 +178,9 @@ namespace World
                     {
                         dstVerts[vCursor++] = new Vertex
                         {
-                            pos = (float3)md.Positions[v] + position,
-                            normal = md.Normals[v],
-                            uv = md.UVs[v]
+                            Position = (float3)md.Positions[v] + position,
+                            Normal = md.Normals[v],
+                            UV = md.UVs[v]
                         };
                     }
 
@@ -185,8 +197,8 @@ namespace World
             data.subMeshCount = 1;
             data.SetSubMesh(0, new SubMeshDescriptor(0, totalIndices)
             {
-                bounds = new Bounds(new Vector3(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE) * 0.5f,
-                    new Vector3(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE)),
+                bounds = new Bounds(new Vector3(ChunkSize, ChunkSize, ChunkSize) * 0.5f,
+                    new Vector3(ChunkSize, ChunkSize, ChunkSize)),
                 vertexCount = totalVerts
             }, MeshUpdateFlags.DontRecalculateBounds);
 
