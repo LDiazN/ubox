@@ -25,7 +25,7 @@ namespace Utils
             return x + y * XSize + z * XSize * YSize;
         }
 
-        public T Get(int x, int y, int z)
+        public readonly T Get(int x, int y, int z)
         {
             return _data[GetIndex(x, y, z)];
         }

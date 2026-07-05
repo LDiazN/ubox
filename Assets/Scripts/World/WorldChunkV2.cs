@@ -95,8 +95,15 @@ namespace World
             }
             md.Indices.Dispose(); // not needed anymore
 
-            // Build cube occupancy (all filled for this example)
-            bool Occupied(int x, int y, int z, in ChunkData chunk) => InChunk(x, y, z, chunk);
+            // Whether this cell in the chunk is occupied (there's data in it)
+            bool Occupied(int x, int y, int z, in ChunkData chunk)
+            {
+                if (!InChunk(x, y, z, chunk))
+                    return false;
+
+                var type = chunk.Blocks.Get(x, y, z).Type;
+                return type != BlockType.Empty && type != BlockType.None;
+            }
 
             // Vertex buffer layout:
             // c = cube, f = face
@@ -128,13 +135,12 @@ namespace World
                 {
                     // Use FaceNormals to check neighbors: Get the normal of the current face, and check if the
                     // cell in that direction has something
-                    int3 n = FaceNormals[f];
-                    if (!Occupied(x + n.x, y + n.y, z + n.z, chunk))
-                    {
-                        // We assume we will use all vertices and indices of this cube.
-                        totalVerts += md.VertCount;
-                        totalIndices += faceIndexBlocks[f].Count;
-                    }
+                    var n = FaceNormals[f];
+                    if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
+
+                    // We assume we will use all vertices and indices of this cube.
+                    totalVerts += md.VertCount;
+                    totalIndices += faceIndexBlocks[f].Count;
                 }
             }
 
