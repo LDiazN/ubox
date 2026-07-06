@@ -1,4 +1,3 @@
-using System.Numerics;
 using UnityEngine;
 using Quaternion = UnityEngine.Quaternion;
 using Vector2 = UnityEngine.Vector2;
@@ -17,6 +16,8 @@ public class FirstPersonMovement : MonoBehaviour
     [SerializeField] private float maxCameraRotation = 20;
     [Min(0)]
     [SerializeField] private float gravity = 9;
+    [Min(0)]
+    [SerializeField] private float jumpHeight = 1.1f;
 
     #endregion
 
@@ -28,6 +29,8 @@ public class FirstPersonMovement : MonoBehaviour
     private Camera _camera;
     private Vector2 _mouse;
     private float _cameraRotationX;
+    private float _verticalVelocity;
+    private bool _jumpRequested;
 
     #endregion
 
@@ -44,19 +47,36 @@ public class FirstPersonMovement : MonoBehaviour
         _mouse.x = Input.GetAxis("Mouse X");
         _mouse.y = Input.GetAxis("Mouse Y");
         _cameraRotationX -= transform.eulerAngles.x;
+
+        if (Input.GetButtonDown("Jump"))
+        {
+            _jumpRequested = true;
+        }
     }
 
     private void FixedUpdate()
     {
-        var movement = (transform.right * _input.x + transform.forward * _input.y) *
-                       (Time.fixedDeltaTime * movementSpeed);
         transform.Rotate(new Vector3(0, _mouse.x, 0) * (Time.fixedDeltaTime * cameraSpeed));
 
-        // Gravity
-        if (!_controller.isGrounded)
-            movement += gravity * Time.fixedDeltaTime *  Vector3.down;
+        // Jump and Gravity
+        if (_controller.isGrounded)
+        {
+            _verticalVelocity = -0.5f;
+            if (_jumpRequested)
+            {
+                _verticalVelocity = Mathf.Sqrt(2f * gravity * jumpHeight);
+            }
+        }
+        else
+        {
+            _verticalVelocity -= gravity * Time.fixedDeltaTime;
+        }
+        _jumpRequested = false;
 
-        _controller.Move(movement);
+        var movement = (transform.right * _input.x + transform.forward * _input.y) * movementSpeed;
+        movement.y = _verticalVelocity;
+
+        _controller.Move(movement * Time.fixedDeltaTime);
         // Camera rotation
         _cameraRotationX = Mathf.Clamp(_cameraRotationX - _mouse.y * Time.fixedDeltaTime * cameraSpeed, -maxCameraRotation, maxCameraRotation);
         if (!_camera)

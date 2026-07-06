@@ -17,6 +17,9 @@ namespace Player
         [Tooltip("A block without collider used for highlighting other blocks")]
         [SerializeField] private GameObject highlightBlockPrefab;
 
+        [Min(0)]
+        [Tooltip("Cooldown time between cube placements")]
+        [SerializeField] private float timeBetweenOperations = 0.1f;
 
         #endregion
 
@@ -25,6 +28,7 @@ namespace Player
         private Camera _camera;
         private RaycastHit[] _hitBuffer;
         private GameObject _highlightBlock;
+        private float _timeSinceLastOpr;
 
         #endregion
 
@@ -47,6 +51,10 @@ namespace Player
             if (!_camera)
                 return;
 
+            _timeSinceLastOpr += Time.deltaTime;
+            if (_timeSinceLastOpr < timeBetweenOperations)
+                return;
+
             var ray = GetRay();
 
             var nHits = Physics.RaycastNonAlloc(ray, _hitBuffer, maxBlockPlaceDistance);
@@ -63,11 +71,16 @@ namespace Player
             PlaceHighlight(closestHit);
 
             // Now manage addition or deletion of blocks
-
             if (Input.GetMouseButtonDown(0))
+            {
                 PlaceBlock(closestHit);
-            if (Input.GetMouseButtonDown(1))
+                _timeSinceLastOpr = 0;
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
                 RemoveBlock(closestHit);
+                _timeSinceLastOpr = 0;
+            }
         }
 
         private void OnDrawGizmos()
@@ -82,7 +95,7 @@ namespace Player
             var position = hit.point;
             var toHit = hit.point - _camera.transform.position;
             position += 0.1f * toHit.normalized;
-            _highlightBlock.transform.position = new float3(new int3(position));
+            _highlightBlock.transform.position = math.floor((float3)position);
             _highlightBlock.SetActive(true);
         }
 
@@ -95,11 +108,11 @@ namespace Player
             var inside = hit.point;
             var toHit = hit.point - _camera.transform.position;
             inside += 0.1f * toHit.normalized;
-            inside = new float3(new int3(inside));
+            inside = math.floor((float3)inside);
             inside += 0.5f * Vector3.one;
             var nextPosition = inside + hit.normal;
 
-            worldManager.SetBlock(new int3(nextPosition), BlockType.Grass); // TODO support other block types
+            worldManager.SetBlock(new int3(math.floor((float3)nextPosition)), BlockType.Grass); // TODO support other block types
         }
 
         private void RemoveBlock(in RaycastHit hit)
@@ -111,7 +124,7 @@ namespace Player
             var inside = hit.point;
             var toHit = hit.point - _camera.transform.position;
             inside += 0.1f * toHit.normalized;
-            worldManager.SetBlock(new int3(inside), BlockType.Empty);
+            worldManager.SetBlock(new int3(math.floor((float3)inside)), BlockType.Empty);
         }
 
         private RaycastHit GetClosest(RaycastHit[] buffer, int nElements)
