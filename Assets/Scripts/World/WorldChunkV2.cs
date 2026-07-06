@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -24,6 +25,8 @@ namespace World
         private MeshCollider _collider;
         // Cache mesh data from input mesh
         private MeshDataResult _meshData;
+        // When a new change comes in, enqueue it until the currently-running coroutine is finished.
+        private Queue<ChunkData> _changes;
 
         #endregion
 

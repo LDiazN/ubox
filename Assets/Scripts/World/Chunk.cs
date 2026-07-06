@@ -81,6 +81,7 @@ namespace World
             return true;
         }
 
+
         public void Dispose()
         {
             foreach (var entry in _map.Values)
@@ -112,7 +113,7 @@ namespace World
         public static bool IsChunkCoords(int3 pos) => IsChunkCoords(pos.x, pos.y, pos.z);
 
         // Returns a position inside a chunk, from 0 to ChunkSize-1
-        private int3 ToChunkCoordinates(int x, int y, int z)
+        public static int3 ToChunkCoordinates(int x, int y, int z)
         {
             // Note that % is the remainder, not the modulo.
             // modulo(-15, 16) should be 1, but -15 % 16 is -15

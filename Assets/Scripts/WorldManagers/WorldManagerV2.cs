@@ -1,7 +1,7 @@
 using System.Collections.Generic;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Utils;
 using World;
 using PPlayer = Player.Player;
@@ -33,6 +33,8 @@ namespace WorldManagers
 
         // List of chunks to onload at the end of the frame
         private readonly List<int3> _chunksToUnload = new();
+
+        private readonly List<(JobHandle, int3)> _pendingJobs = new();
 
         #endregion
 
@@ -73,7 +75,14 @@ namespace WorldManagers
                     {
                         // Is this chunk internally created?
                         if (!Map.GetChunk(x, y, z, out _))
+                        {
                             PopulateChunk(x, y, z);
+                            continue;
+                        }
+
+                        // Ignore if it's still being populated asynchronously
+                        if (InPending(x, y, z))
+                            continue;
 
                         // Is this chunk rendered?
                         var pos = new int3(x, y, z);
@@ -89,6 +98,18 @@ namespace WorldManagers
                               minChunk.z <= cp.z && cp.z < maxChunk.z;
                 if (!visible)
                     _chunksToUnload.Add(cp);
+            }
+
+            // 3. Mark pending blocks as changed and clean completed ones
+            for (int i = _pendingJobs.Count - 1; i >= 0; i--)
+            {
+                var (handle, chunkPos) = _pendingJobs[i];
+                if (handle.IsCompleted)
+                {
+                    handle.Complete();
+                    _changed.Add(chunkPos);
+                    _pendingJobs.RemoveAt(i);
+                }
             }
         }
 
@@ -166,6 +187,22 @@ namespace WorldManagers
             _changed.Add(ChunkMap.WorldToChunkGrid(x, y, z));
         }
 
+
+        struct PopulateChunkJob : IJob
+        {
+            public int Y;
+            public int3 WorldSize;
+            public ChunkData ChunkData;
+            public void Execute()
+            {
+                const int chunkSize = WorldChunkV2.ChunkSize;
+                var blockType = Y > WorldSize.y * chunkSize ? BlockType.Empty : BlockType.Grass;
+                for (var dx = 0; dx < chunkSize; dx++)
+                    for (var dy = 0; dy < chunkSize; dy++)
+                        for (var dz = 0; dz < chunkSize; dz++)
+                            ChunkData.Blocks.Set(dx, dy, dz, new BlockData { Type = blockType });
+            }
+        }
         // Fills the chunk specified by its chunk position
         private void PopulateChunk(int x, int y, int z)
         {
@@ -175,13 +212,23 @@ namespace WorldManagers
                          z % chunkSize == 0,
                 "Unexpected non-chunk position");
 
-            // TODO Populate this properly with ProcGen
-            // Is this the sky?
-            var blockType = y > worldSize.y * chunkSize ? BlockType.Empty : BlockType.Grass;
-            for (var dx = 0; dx < chunkSize; dx++)
-                for (var dy = 0; dy < chunkSize; dy++)
-                    for (var dz = 0; dz < chunkSize; dz++)
-                        SetBlock(x + dx, y + dy, z + dz, blockType);
+
+            Map.AddChunk(x, y, z);
+            Map.GetChunk(x, y, z, out var data);
+
+            // Use a job to offload this to worker threads;
+            var populateJob = new PopulateChunkJob { Y = y, WorldSize = worldSize, ChunkData = data };
+            var handle = populateJob.Schedule();
+            _pendingJobs.Add((handle, new int3(x, y, z)));
+        }
+
+        private bool InPending(int x, int y, int z)
+        {
+            foreach (var (_, chunkPos) in _pendingJobs)
+                if (chunkPos.Equals(new int3(x, y, z)))
+                    return true;
+
+            return false;
         }
     }
 }
