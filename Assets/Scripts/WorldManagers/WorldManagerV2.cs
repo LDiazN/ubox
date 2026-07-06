@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -17,6 +18,9 @@ namespace WorldManagers
         [SerializeField] private WorldChunkV2 chunkPrefab;
         [Tooltip("How far away, measured in chunks, the player can see")]
         [SerializeField] private int chunkRenderDistance;
+        [Tooltip("How many frames between updates")]
+        [SerializeField] private int updateRateInterval = 3;
+        [SerializeField] private bool showGizmos = true;
 
         #endregion
 
@@ -58,6 +62,22 @@ namespace WorldManagers
 
         private void Update()
         {
+            //Mark pending blocks as changed and clean completed ones
+            // (run every frame for responsiveness, chunk rendering depends on this)
+            for (int i = _pendingJobs.Count - 1; i >= 0; i--)
+            {
+                var (handle, chunkPos) = _pendingJobs[i];
+                if (handle.IsCompleted)
+                {
+                    handle.Complete();
+                    _changed.Add(chunkPos);
+                    _pendingJobs.RemoveAt(i);
+                }
+            }
+
+            if (updateRateInterval > 0 && Time.frameCount % updateRateInterval != 0)
+                return;
+
             if (!PPlayer.Instance)
                 return;
 
@@ -99,18 +119,6 @@ namespace WorldManagers
                 if (!visible)
                     _chunksToUnload.Add(cp);
             }
-
-            // 3. Mark pending blocks as changed and clean completed ones
-            for (int i = _pendingJobs.Count - 1; i >= 0; i--)
-            {
-                var (handle, chunkPos) = _pendingJobs[i];
-                if (handle.IsCompleted)
-                {
-                    handle.Complete();
-                    _changed.Add(chunkPos);
-                    _pendingJobs.RemoveAt(i);
-                }
-            }
         }
 
         private void LateUpdate()
@@ -142,7 +150,7 @@ namespace WorldManagers
 
         private void OnDrawGizmos()
         {
-            if (Map == null)
+            if (!showGizmos || Map == null)
                 return;
 
             Gizmos.color = Color.red;
@@ -188,6 +196,7 @@ namespace WorldManagers
         }
 
 
+        [BurstCompile]
         struct PopulateChunkJob : IJob
         {
             public int Y;

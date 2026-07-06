@@ -392,6 +392,8 @@ MonoBehaviour:
     z: 16
   chunkPrefab: {fileID: 7867842141025174088, guid: ff9f35488e4f2dd4d88ae144fa47356d, type: 3}
   chunkRenderDistance: 4
+  updateRateInterval: 3
+  showGizmos: 1
 --- !u!1001 &1851940743
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -410,7 +412,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4961515818384909522, guid: 814a924b8d17ebd4eb75b582b255b66b, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 27
+      value: 45
       objectReference: {fileID: 0}
     - target: {fileID: 4961515818384909522, guid: 814a924b8d17ebd4eb75b582b255b66b, type: 3}
       propertyPath: m_LocalPosition.z
