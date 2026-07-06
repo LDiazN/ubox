@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System.Collections;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -74,9 +74,7 @@ namespace World
             if (!currentCoords.Equals(chunkCoords))
                 return;
 
-            _meshFilter.mesh = BuildChunk(chunk);
-            _collider.sharedMesh = null;
-            _collider.sharedMesh = _meshFilter.mesh;
+            StartCoroutine(BuildChunk(chunk));
         }
 
         static bool InChunk(int x, int y, int z) =>
@@ -236,10 +234,8 @@ namespace World
             }, MeshUpdateFlags.DontRecalculateBounds);
         }
 
-        Mesh BuildChunk(in ChunkData chunk)
+        IEnumerator BuildChunk(ChunkData chunk)
         {
-            var sw = new System.Diagnostics.Stopwatch();
-            sw.Start();
             InitMeshData();
             var countJob = new CountVertsJob
             {
@@ -247,13 +243,23 @@ namespace World
                 MeshData = _meshData,
                 Result = new NativeReference<CountResult>(Allocator.TempJob)
             };
-            countJob.Schedule().Complete();
+            var countHandle = countJob.Schedule();
+
+            while (!countHandle.IsCompleted)
+                yield return null;
+
+            countHandle.Complete();
+
             var countResult = countJob.Result.Value;
             countJob.Result.Dispose();
 
             // When rendering just air
             if (countResult.TotalVerts == 0)
-                return null;
+            {
+                _meshFilter.mesh = null;
+                _collider.sharedMesh = null;
+                yield break;
+            }
 
             var meshDataArray = Mesh.AllocateWritableMeshData(1);
             var totalVerts = countResult.TotalVerts;
@@ -279,16 +285,21 @@ namespace World
                 MeshDataArray = meshDataArray
             };
 
-            constructJob.Schedule().Complete();
+            var constructHandle = constructJob.Schedule();
+
+            while (!constructHandle.IsCompleted)
+                yield return null;
+
+            constructHandle.Complete();
 
             var mesh = new Mesh { name = "ChunkMesh" };
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh,
                 MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
             mesh.RecalculateBounds();
 
-            sw.Stop();
-            Debug.Log($"Build chunk time: {sw.ElapsedMilliseconds}ms");
-            return mesh;
+            _meshFilter.mesh = mesh;
+            _collider.sharedMesh = null;
+            _collider.sharedMesh = _meshFilter.mesh;
         }
 
         struct MeshDataResult
