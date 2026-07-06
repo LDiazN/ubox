@@ -20,6 +20,8 @@ namespace World
 
         private MeshFilter _meshFilter;
         private MeshCollider _collider;
+        // Cache mesh data from input mesh
+        private MeshDataResult _meshData;
 
         #endregion
 
@@ -57,6 +59,11 @@ namespace World
                 channel.OnChunkChanged -= OnChunkChanged;
         }
 
+        private void OnDestroy()
+        {
+            _meshData.Dispose();
+        }
+
         private void OnChunkChanged(ChunkData chunk)
         {
             var chunkCoords = chunk.Position;
@@ -70,45 +77,38 @@ namespace World
             _collider.sharedMesh = _meshFilter.mesh;
         }
 
-        bool InChunk(int x, int y, int z, in ChunkData chunk) =>
+        static bool InChunk(int x, int y, int z) =>
             x is >= 0 and < ChunkSize &&
             y is >= 0 and < ChunkSize &&
             z is >= 0 and < ChunkSize;
 
-        Mesh BuildChunk(in ChunkData chunk)
+        void InitMeshData()
         {
-            var md = GetMeshData();
+            // Do nothing if already created
+            if (_meshData.FaceIndexBlocks.IsCreated)
+                return;
 
-            // Group source indices into 6 faces by triangle normal.
-            // Assume indices are stored adjacent by face: the two triangles in a face are side by side
+            _meshData = GetMeshData();
+        }
 
-            // Holds index data per each face. A cube has 6 faces.
-            var faceIndexBlocks = new List<uint>[6];
-            for (int f = 0; f < 6; f++)
-                faceIndexBlocks[f] = new List<uint>();
+        // Whether this cell in the chunk is occupied: There's something other than air or emptyness here
+        static bool Occupied(int x, int y, int z, in ChunkData chunk)
+        {
+            if (!InChunk(x, y, z))
+                return false;
 
-            int indicesPerFace = md.IndexCount / 6; // ex: 6 indices per face (2 tris)
-            for (int f = 0; f < 6; f++)
-            {
-                int start = f * indicesPerFace;
-                for (int i = 0; i < indicesPerFace; i++)
-                {
-                    uint idx = md.Indices[start + i];
-                    faceIndexBlocks[f].Add(idx);
-                }
-            }
-            md.Indices.Dispose(); // not needed anymore
+            var type = chunk.Blocks.Get(x, y, z).Type;
+            return type != BlockType.Empty && type != BlockType.None;
+        }
 
-            // Whether this cell in the chunk is occupied: There's something other than air or emptyness here
-            bool Occupied(int x, int y, int z, in ChunkData chunk)
-            {
-                if (!InChunk(x, y, z, chunk))
-                    return false;
+        struct CountResult
+        {
+            public int TotalVerts;
+            public int TotalIndices;
+        }
 
-                var type = chunk.Blocks.Get(x, y, z).Type;
-                return type != BlockType.Empty && type != BlockType.None;
-            }
-
+        private CountResult CountVerts(in ChunkData chunk, in MeshDataResult meshData)
+        {
             // Vertex buffer layout:
             // c = cube, f = face
             // vBase1 = 0                               vBase2 = 24 * 6 = 144
@@ -129,25 +129,40 @@ namespace World
             int totalVerts = 0;
             int totalIndices = 0;
             for (var x = 0; x < ChunkSize; x++)
-            for (var y = 0; y < ChunkSize; y++)
-            for (var z = 0; z < ChunkSize; z++)
+                for (var y = 0; y < ChunkSize; y++)
+                    for (var z = 0; z < ChunkSize; z++)
+                    {
+                        if (!Occupied(x, y, z, chunk)) continue;
+                        // TODO we could optimize the vertex buffer by storing one cube if ANY face is visible, and then
+                        // only pushing the visible faces to the index buffer
+                        for (var f = 0; f < 6; f++)
+                        {
+                            // Use FaceNormals to check neighbors: Get the normal of the current face, and check if the
+                            // cell in that direction has something
+                            var n = FaceNormals[f];
+                            if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
+
+                            // We assume we will use all vertices and indices of this cube.
+                            totalVerts += meshData.VertCount;
+                            totalIndices += meshData.IndicesPerFace;
+                        }
+                    }
+
+            return new CountResult
             {
-                if (!Occupied(x, y, z, chunk)) continue;
-                // TODO we could optimize the vertex buffer by storing one cube if ANY face is visible, and then
-                // only pushing the visible faces to the index buffer
-                for (var f = 0; f < 6; f++)
-                {
-                    // Use FaceNormals to check neighbors: Get the normal of the current face, and check if the
-                    // cell in that direction has something
-                    var n = FaceNormals[f];
-                    if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
+                TotalVerts = totalVerts,
+                TotalIndices = totalIndices
+            };
+        }
 
-                    // We assume we will use all vertices and indices of this cube.
-                    totalVerts += md.VertCount;
-                    totalIndices += faceIndexBlocks[f].Count;
-                }
-            }
+        Mesh BuildChunk(in ChunkData chunk)
+        {
+            InitMeshData();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
 
+            var countResult = CountVerts(chunk, _meshData);
+            var totalVerts = countResult.TotalVerts;
+            var totalIndices = countResult.TotalIndices;
 
             var meshDataArray = Mesh.AllocateWritableMeshData(1);
             var data = meshDataArray[0];
@@ -168,41 +183,37 @@ namespace World
             // iCursor: next available index position
             int vCursor = 0, iCursor = 0;
             for (int x = 0; x < ChunkSize; x++)
-            for (int y = 0; y < ChunkSize; y++)
-            for (int z = 0; z < ChunkSize; z++)
-            {
-                if (!Occupied(x, y, z, chunk)) continue;
-                float3 position = new float3(x, y, z);
-
-                for (int f = 0; f < 6; f++)
-                {
-                    int3 n = FaceNormals[f];
-
-                    // Like before, we skip if this face has neighbors
-                    if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
-
-                    // vBase: where this face's vertices start
-                    int vBase = vCursor;
-                    // copy full vert buffer once per emitted face. Wasteful, I know, but easy to implement
-                    for (int v = 0; v < md.VertCount; v++)
+                for (int y = 0; y < ChunkSize; y++)
+                    for (int z = 0; z < ChunkSize; z++)
                     {
-                        dstVerts[vCursor++] = new Vertex
+                        if (!Occupied(x, y, z, chunk)) continue;
+                        float3 position = new(x, y, z);
+
+                        for (int f = 0; f < 6; f++)
                         {
-                            Position = (float3)md.Positions[v] + position,
-                            Normal = md.Normals[v],
-                            UV = md.UVs[v]
-                        };
+                            int3 n = FaceNormals[f];
+
+                            // Like before, we skip if this face has neighbors
+                            if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
+
+                            // vBase: where this face's vertices start
+                            int vBase = vCursor;
+                            // copy full vert buffer once per emitted face. Wasteful, I know, but easy to implement
+                            for (int v = 0; v < _meshData.VertCount; v++)
+                            {
+                                dstVerts[vCursor++] = new Vertex
+                                {
+                                    Position = (float3)_meshData.Positions[v] + position,
+                                    Normal = _meshData.Normals[v],
+                                    UV = _meshData.UVs[v]
+                                };
+                            }
+
+                            int startIndex = f * _meshData.IndicesPerFace;
+                            for (int i = 0; i < _meshData.IndicesPerFace; i++)
+                                dstIndices[iCursor++] = (uint)vBase + _meshData.FaceIndexBlocks[startIndex + i];
+                        }
                     }
-
-                    var block = faceIndexBlocks[f];
-                    for (int i = 0; i < block.Count; i++)
-                        dstIndices[iCursor++] = (uint)vBase + block[i];
-                }
-            }
-
-            md.Positions.Dispose();
-            md.Normals.Dispose();
-            md.UVs.Dispose();
 
             data.subMeshCount = 1;
             data.SetSubMesh(0, new SubMeshDescriptor(0, totalIndices)
@@ -217,6 +228,8 @@ namespace World
                 MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
 
             mesh.RecalculateBounds();
+            sw.Stop();
+            Debug.Log($"Chunk Mesh building time: {sw.ElapsedMilliseconds}ms");
             return mesh;
         }
 
@@ -226,8 +239,23 @@ namespace World
             public int VertCount;
             public NativeArray<Vector3> Normals;
             public NativeArray<Vector2> UVs;
-            public NativeArray<ushort> Indices;
-            public int IndexCount;
+            public NativeArray<uint> FaceIndexBlocks;
+            public int IndicesPerFace;
+
+            public void Dispose()
+            {
+                if (Positions.IsCreated)
+                    Positions.Dispose();
+
+                if (Normals.IsCreated)
+                    Normals.Dispose();
+
+                if (UVs.IsCreated)
+                    UVs.Dispose();
+
+                if (FaceIndexBlocks.IsCreated)
+                    FaceIndexBlocks.Dispose();
+            }
         }
 
         MeshDataResult GetMeshData()
@@ -237,9 +265,9 @@ namespace World
             var srcData = srcDataArray[0];
 
             int srcVertCount = srcData.vertexCount;
-            var srcPositions = new NativeArray<Vector3>(srcVertCount, Allocator.Temp);
-            var srcNormals = new NativeArray<Vector3>(srcVertCount, Allocator.Temp);
-            var srcUVs = new NativeArray<Vector2>(srcVertCount, Allocator.Temp);
+            var srcPositions = new NativeArray<Vector3>(srcVertCount, Allocator.Persistent);
+            var srcNormals = new NativeArray<Vector3>(srcVertCount, Allocator.Persistent);
+            var srcUVs = new NativeArray<Vector2>(srcVertCount, Allocator.Persistent);
             srcData.GetVertices(srcPositions);
             srcData.GetNormals(srcNormals);
             srcData.GetUVs(0, srcUVs);
@@ -247,7 +275,26 @@ namespace World
             int srcIndexCount = (int)cubeMesh.GetIndexCount(0);
             NativeArray<ushort> srcIndices16 = new NativeArray<ushort>(srcIndexCount, Allocator.Temp);
             srcData.GetIndices(srcIndices16, 0);
+
+            // Group source indices into 6 faces by triangle normal.
+            // Assume indices are stored adjacent by face: the two triangles in a face are side by side
+
+            // Holds index data per each face. A cube has 6 faces.
+            int indicesPerFace = srcIndexCount / 6; // ex: 6 indices per face (2 tris)
+            var faceIndexBlocks = new NativeArray<uint>(6 * indicesPerFace, Allocator.Persistent);
+
+            for (int f = 0; f < 6; f++)
+            {
+                int start = f * indicesPerFace;
+                for (int i = 0; i < indicesPerFace; i++)
+                {
+                    uint idx = srcIndices16[start + i];
+                    faceIndexBlocks[start + i] = idx;
+                }
+            }
+
             srcDataArray.Dispose();
+            srcIndices16.Dispose();
 
             return new MeshDataResult
             {
@@ -255,8 +302,8 @@ namespace World
                 VertCount = srcVertCount,
                 Normals = srcNormals,
                 UVs = srcUVs,
-                Indices = srcIndices16,
-                IndexCount = srcIndexCount
+                FaceIndexBlocks = faceIndexBlocks,
+                IndicesPerFace = indicesPerFace
             };
         }
     }
