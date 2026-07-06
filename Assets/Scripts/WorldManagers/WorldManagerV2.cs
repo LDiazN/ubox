@@ -54,11 +54,6 @@ namespace WorldManagers
             Map = new ChunkMap();
         }
 
-        private void Start()
-        {
-            // InitChunkGameobjects();
-        }
-
         private void Update()
         {
             if (!PPlayer.Instance)
