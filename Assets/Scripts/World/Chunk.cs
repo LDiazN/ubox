@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Utils;
 
 namespace World
@@ -21,7 +22,9 @@ namespace World
 
     public class ChunkMap
     {
-        private Dictionary<int3, ChunkData> _map = new();
+        Dictionary<int3, ChunkData> _map = new();
+        public Dictionary<int3, ChunkData> Map => _map;
+
 
         public bool GetChunk(int x, int y, int z, out ChunkData data)
         {
@@ -38,7 +41,7 @@ namespace World
                 return false;
             }
 
-            var localChunkCoords = new int3(x % WorldChunkV2.ChunkSize, y % WorldChunkV2.ChunkSize, z % WorldChunkV2.ChunkSize);
+            var localChunkCoords = ToChunkCoordinates(x, y, z);
             data = chunkData.Blocks.Get(localChunkCoords.x, localChunkCoords.y, localChunkCoords.z);
 
             return true;
@@ -46,7 +49,7 @@ namespace World
 
         public void AddChunk(int x, int y, int z)
         {
-            var chunkCoords = WorldToChunkGrid(x,y,z);
+            var chunkCoords = WorldToChunkGrid(x, y, z);
             Debug.Assert(!_map.ContainsKey(chunkCoords), "Replacing existent chunk. Do you really want to do this?");
             _map[chunkCoords] = new ChunkData
             {
@@ -65,12 +68,13 @@ namespace World
             var coords = ToChunkCoordinates(x, y, z);
             if (chunkExists)
             {
-                chunk.Blocks.Set(coords.x,coords.y,coords.z, data);
+                chunk.Blocks.Set(coords.x, coords.y, coords.z, data);
                 return false;
             }
 
-            AddChunk(x,y,z);
-            GetChunk(x, y, z, out chunk);
+            AddChunk(x, y, z);
+            var found = GetChunk(x, y, z, out chunk);
+            Debug.Assert(found, "Recently added chunk is not present");
 
             chunk.Blocks.Set(coords.x, coords.y, coords.z, data);
 
@@ -79,7 +83,7 @@ namespace World
 
         public void Dispose()
         {
-            foreach(var entry in _map.Values)
+            foreach (var entry in _map.Values)
                 entry.Dispose();
         }
 
@@ -87,17 +91,40 @@ namespace World
         // converts from world poisition to the corresponding chunk grid coordinates
         public static int3 WorldToChunkGrid(int x, int y, int z)
         {
+            int cx = x % WorldChunkV2.ChunkSize;
+            int cy = y % WorldChunkV2.ChunkSize;
+            int cz = z % WorldChunkV2.ChunkSize;
+
             return new int3(
-                x - x % WorldChunkV2.ChunkSize,
-                y - y % WorldChunkV2.ChunkSize,
-                z - z % WorldChunkV2.ChunkSize
+                cx < 0 ? x - cx - WorldChunkV2.ChunkSize : x - cx,
+                cy < 0 ? y - cy - WorldChunkV2.ChunkSize : y - cy,
+                cz < 0 ? z - cz - WorldChunkV2.ChunkSize : z - cz
             );
         }
+
+        public static bool IsChunkCoords(int x, int y, int z)
+        {
+            return x % WorldChunkV2.ChunkSize == 0 &&
+                   y % WorldChunkV2.ChunkSize == 0 &&
+                   z % WorldChunkV2.ChunkSize == 0;
+        }
+
+        public static bool IsChunkCoords(int3 pos) => IsChunkCoords(pos.x, pos.y, pos.z);
 
         // Returns a position inside a chunk, from 0 to ChunkSize-1
         private int3 ToChunkCoordinates(int x, int y, int z)
         {
-            return new int3(x % WorldChunkV2.ChunkSize, y % WorldChunkV2.ChunkSize, z % WorldChunkV2.ChunkSize);
+            // Note that % is the remainder, not the modulo.
+            // modulo(-15, 16) should be 1, but -15 % 16 is -15
+            int cx = x % WorldChunkV2.ChunkSize;
+            int cy = y % WorldChunkV2.ChunkSize;
+            int cz = z % WorldChunkV2.ChunkSize;
+
+            return new int3(
+                cx < 0 ? cx + WorldChunkV2.ChunkSize : cx,
+                cy < 0 ? cy + WorldChunkV2.ChunkSize : cy,
+                cz < 0 ? cz + WorldChunkV2.ChunkSize : cz
+            );
         }
     }
 

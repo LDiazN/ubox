@@ -101,10 +101,6 @@ namespace ECS.World
                     dimension = meshData.GetVertexAttributeDimension(VertexAttribute.Position)
                 };
             }
-
-            NativeArray<VertexAttributeDescriptor> attrs;
-            // data.SetVertexBufferParams(VertexCount * totalCubes, attrs.to);
-            // data.SetIndexBufferParams((int)IndexCount * totalCubes, IndexFormat.UInt16);
         }
     }
 }

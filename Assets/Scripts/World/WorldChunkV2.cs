@@ -19,7 +19,7 @@ namespace World
         #region Internal State
 
         private MeshFilter _meshFilter;
-        private MeshRenderer _meshRenderer;
+        private MeshCollider _collider;
 
         #endregion
 
@@ -40,7 +40,7 @@ namespace World
         private void Awake()
         {
             _meshFilter = GetComponent<MeshFilter>();
-            _meshRenderer = GetComponent<MeshRenderer>();
+            _collider = GetComponent<MeshCollider>();
         }
 
         private void OnEnable()
@@ -66,10 +66,14 @@ namespace World
                 return;
 
             _meshFilter.mesh = BuildChunk(chunk);
+            _collider.sharedMesh = null;
+            _collider.sharedMesh = _meshFilter.mesh;
         }
 
-
-        bool InChunk(int x, int y, int z, in ChunkData chunk) => x >= 0 && x < ChunkSize && y >= 0 && y < ChunkSize && z >= 0 && z < ChunkSize;
+        bool InChunk(int x, int y, int z, in ChunkData chunk) =>
+            x is >= 0 and < ChunkSize &&
+            y is >= 0 and < ChunkSize &&
+            z is >= 0 and < ChunkSize;
 
         Mesh BuildChunk(in ChunkData chunk)
         {
@@ -95,7 +99,7 @@ namespace World
             }
             md.Indices.Dispose(); // not needed anymore
 
-            // Whether this cell in the chunk is occupied (there's data in it)
+            // Whether this cell in the chunk is occupied: There's something other than air or emptyness here
             bool Occupied(int x, int y, int z, in ChunkData chunk)
             {
                 if (!InChunk(x, y, z, chunk))
