@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -107,7 +109,20 @@ namespace World
             public int TotalIndices;
         }
 
-        private CountResult CountVerts(in ChunkData chunk, in MeshDataResult meshData)
+        [BurstCompile]
+        struct CountVertsJob : IJob
+        {
+            [ReadOnly] public ChunkData Chunk;
+            [ReadOnly] public MeshDataResult MeshData;
+            public NativeReference<CountResult> Result;
+
+            public void Execute()
+            {
+                Result.Value = CountVerts(Chunk, MeshData);
+            }
+        }
+
+        private static CountResult CountVerts(in ChunkData chunk, in MeshDataResult meshData)
         {
             // Vertex buffer layout:
             // c = cube, f = face
@@ -155,26 +170,23 @@ namespace World
             };
         }
 
-        Mesh BuildChunk(in ChunkData chunk)
+        [BurstCompile]
+        private struct ConstructMeshJob : IJob
         {
-            InitMeshData();
-            var sw = System.Diagnostics.Stopwatch.StartNew();
+            [ReadOnly] public ChunkData Chunk;
+            [ReadOnly] public CountResult CountResult;
+            [ReadOnly] public MeshDataResult MeshData;
+            public Mesh.MeshDataArray MeshDataArray;
 
-            var countResult = CountVerts(chunk, _meshData);
-            var totalVerts = countResult.TotalVerts;
-            var totalIndices = countResult.TotalIndices;
+            public void Execute()
+            {
+                ConstructMesh(Chunk, CountResult, MeshData, MeshDataArray);
+            }
+        }
 
-            var meshDataArray = Mesh.AllocateWritableMeshData(1);
+        static void ConstructMesh(in ChunkData chunk, in CountResult countResult, in MeshDataResult meshData, in Mesh.MeshDataArray meshDataArray)
+        {
             var data = meshDataArray[0];
-
-            var layout = new NativeArray<VertexAttributeDescriptor>(3, Allocator.Temp);
-            layout[0] = new VertexAttributeDescriptor(VertexAttribute.Position);
-            layout[1] = new VertexAttributeDescriptor(VertexAttribute.Normal);
-            layout[2] = new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2);
-            data.SetVertexBufferParams(totalVerts, layout);
-            layout.Dispose();
-            data.SetIndexBufferParams(totalIndices, IndexFormat.UInt32);
-
             var dstVerts = data.GetVertexData<Vertex>();
             var dstIndices = data.GetIndexData<uint>();
 
@@ -199,37 +211,83 @@ namespace World
                             // vBase: where this face's vertices start
                             int vBase = vCursor;
                             // copy full vert buffer once per emitted face. Wasteful, I know, but easy to implement
-                            for (int v = 0; v < _meshData.VertCount; v++)
+                            for (int v = 0; v < meshData.VertCount; v++)
                             {
                                 dstVerts[vCursor++] = new Vertex
                                 {
-                                    Position = (float3)_meshData.Positions[v] + position,
-                                    Normal = _meshData.Normals[v],
-                                    UV = _meshData.UVs[v]
+                                    Position = (float3)meshData.Positions[v] + position,
+                                    Normal = meshData.Normals[v],
+                                    UV = meshData.UVs[v]
                                 };
                             }
 
-                            int startIndex = f * _meshData.IndicesPerFace;
-                            for (int i = 0; i < _meshData.IndicesPerFace; i++)
-                                dstIndices[iCursor++] = (uint)vBase + _meshData.FaceIndexBlocks[startIndex + i];
+                            int startIndex = f * meshData.IndicesPerFace;
+                            for (int i = 0; i < meshData.IndicesPerFace; i++)
+                                dstIndices[iCursor++] = (uint)vBase + meshData.FaceIndexBlocks[startIndex + i];
                         }
                     }
 
             data.subMeshCount = 1;
-            data.SetSubMesh(0, new SubMeshDescriptor(0, totalIndices)
+            data.SetSubMesh(0, new SubMeshDescriptor(0, countResult.TotalIndices)
             {
                 bounds = new Bounds(new Vector3(ChunkSize, ChunkSize, ChunkSize) * 0.5f,
                     new Vector3(ChunkSize, ChunkSize, ChunkSize)),
-                vertexCount = totalVerts
+                vertexCount = countResult.TotalVerts
             }, MeshUpdateFlags.DontRecalculateBounds);
+        }
+
+        Mesh BuildChunk(in ChunkData chunk)
+        {
+            var sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            InitMeshData();
+            var countJob = new CountVertsJob
+            {
+                Chunk = chunk,
+                MeshData = _meshData,
+                Result = new NativeReference<CountResult>(Allocator.TempJob)
+            };
+            countJob.Schedule().Complete();
+            var countResult = countJob.Result.Value;
+            countJob.Result.Dispose();
+
+            // When rendering just air
+            if (countResult.TotalVerts == 0)
+                return null;
+
+            var meshDataArray = Mesh.AllocateWritableMeshData(1);
+            var totalVerts = countResult.TotalVerts;
+            var totalIndices = countResult.TotalIndices;
+
+            var data = meshDataArray[0];
+            var layout = new NativeArray<VertexAttributeDescriptor>(3, Allocator.Temp);
+            layout[0] = new VertexAttributeDescriptor(VertexAttribute.Position);
+            layout[1] = new VertexAttributeDescriptor(VertexAttribute.Normal);
+            layout[2] = new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2);
+
+            // This will allocate space for vertices and indices
+            data.SetVertexBufferParams(totalVerts, layout);
+            data.SetIndexBufferParams(totalIndices, IndexFormat.UInt32);
+
+            layout.Dispose();
+
+            var constructJob = new ConstructMeshJob
+            {
+                Chunk = chunk,
+                CountResult = countResult,
+                MeshData = _meshData,
+                MeshDataArray = meshDataArray
+            };
+
+            constructJob.Schedule().Complete();
 
             var mesh = new Mesh { name = "ChunkMesh" };
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh,
                 MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
-
             mesh.RecalculateBounds();
+
             sw.Stop();
-            Debug.Log($"Chunk Mesh building time: {sw.ElapsedMilliseconds}ms");
+            Debug.Log($"Build chunk time: {sw.ElapsedMilliseconds}ms");
             return mesh;
         }
 
