@@ -195,6 +195,8 @@ namespace WorldManagers
             _changed.Add(ChunkMap.WorldToChunkGrid(x, y, z));
         }
 
+        public void SetBlock(int3 pos, BlockType type) => SetBlock(pos.x, pos.y, pos.z, type);
+
 
         [BurstCompile]
         struct PopulateChunkJob : IJob
@@ -212,6 +214,7 @@ namespace WorldManagers
                             ChunkData.Blocks.Set(dx, dy, dz, new BlockData { Type = blockType });
             }
         }
+
         // Fills the chunk specified by its chunk position
         private void PopulateChunk(int x, int y, int z)
         {
