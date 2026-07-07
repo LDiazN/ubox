@@ -1,34 +1,36 @@
 using System;
-using Unity.Mathematics;
 using UnityEngine;
 using World;
 
-public class EventsChannel : MonoBehaviour
+namespace Managers
 {
-    #region Internal State
-
-    private static EventsChannel _instance;
-
-    // Arg: whether pause is active or not
-    public event Action<bool> OnPause;
-    public event Action<ChunkData> OnChunkChanged;
-
-    public static EventsChannel Instance => _instance;
-
-    #endregion
-
-    private void Awake()
+    public class EventsChannel : MonoBehaviour
     {
-        if (_instance)
+        #region Internal State
+
+        public static EventsChannel Instance { get; private set; }
+
+        // Arg: whether pause is active or not
+        public event Action<bool> OnPause;
+
+        public event Action<BlockType> OnPlayerBlockChanged;
+
+
+        #endregion
+
+        private void Awake()
         {
-            Destroy(gameObject);
-            return;
+            if (Instance)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
         }
 
-        _instance = this;
+        public static void Pause(bool pauseActive) => Instance ?.OnPause?.Invoke(pauseActive);
+
+        public static void ChangePlayerBlock(BlockType block) => Instance ?.OnPlayerBlockChanged?.Invoke(block);
     }
-
-    public static void Pause(bool pauseActive) => _instance?.OnPause?.Invoke(pauseActive);
-
-    public static void ChunkChanged(ChunkData chunk) => _instance?.OnChunkChanged?.Invoke(chunk);
 }

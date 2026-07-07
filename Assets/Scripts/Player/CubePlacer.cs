@@ -1,3 +1,4 @@
+using Managers;
 using Unity.Mathematics;
 using UnityEngine;
 using Utils;
@@ -29,7 +30,7 @@ namespace Player
         private RaycastHit[] _hitBuffer;
         private GameObject _highlightBlock;
         private float _timeSinceLastOpr;
-        private BlockType _currentBlockType;
+        public BlockType CurrentBlockType { get; private set; }
 
         #endregion
 
@@ -45,7 +46,7 @@ namespace Player
             _hitBuffer = new RaycastHit[10];
             _highlightBlock = Instantiate(highlightBlockPrefab, transform.position, quaternion.identity);
             _highlightBlock.SetActive(false);
-            _currentBlockType = BlockType.Grass;
+            CurrentBlockType = BlockType.Grass;
         }
 
         private void Update()
@@ -53,10 +54,14 @@ namespace Player
             if (!_camera || GameManager.IsPaused)
                 return;
 
+            var old = CurrentBlockType;
             if (Input.GetKeyDown(KeyCode.Alpha1))
-                _currentBlockType = BlockType.Grass;
+                CurrentBlockType = BlockType.Grass;
             else if (Input.GetKeyDown(KeyCode.Alpha2))
-                _currentBlockType = BlockType.Dirt;
+                CurrentBlockType = BlockType.Dirt;
+
+            if (old != CurrentBlockType)
+                EventsChannel.ChangePlayerBlock(CurrentBlockType);
 
             _timeSinceLastOpr += Time.deltaTime;
             if (_timeSinceLastOpr < timeBetweenOperations)
@@ -119,7 +124,7 @@ namespace Player
             inside += 0.5f * Vector3.one;
             var nextPosition = inside + hit.normal;
 
-            worldManager.SetBlock(new int3(math.floor((float3)nextPosition)), _currentBlockType); // TODO support other block types
+            worldManager.SetBlock(new int3(math.floor((float3)nextPosition)), CurrentBlockType); // TODO support other block types
         }
 
         private void RemoveBlock(in RaycastHit hit)

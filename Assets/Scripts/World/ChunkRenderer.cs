@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Managers;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
@@ -53,13 +54,6 @@ namespace World
             _collider = GetComponent<MeshCollider>();
         }
 
-        private void Start()
-        {
-            var channel = EventsChannel.Instance;
-            if (channel)
-                channel.OnChunkChanged += OnChunkChanged;
-        }
-
         private void OnDisable()
         {
             _changes?.Clear();
@@ -69,12 +63,6 @@ namespace World
         private void OnDestroy()
         {
             _meshData.Dispose();
-
-            // According to the profiler, this part was slowing down the activation and deactivation for the
-            // chunk pool when done in OnEnable, so we moved it here
-            var channel = EventsChannel.Instance;
-            if (channel)
-                channel.OnChunkChanged -= OnChunkChanged;
         }
 
         public void Clear()
@@ -98,12 +86,12 @@ namespace World
 
             if (!IsBuilding)
             {
-                StartCoroutine(BuildQueue());
+                StartCoroutine(ProcessQueue());
             }
         }
 
         // This additional coroutine saves us from adding an update method
-        private IEnumerator BuildQueue()
+        private IEnumerator ProcessQueue()
         {
             IsBuilding = true;
             while (_changes.Count > 0)
@@ -293,7 +281,7 @@ namespace World
             var countHandle = countJob.Schedule();
 
             while (!countHandle.IsCompleted)
-                yield return new WaitForSeconds(0.1f);
+                yield return null;
 
             countHandle.Complete();
 
