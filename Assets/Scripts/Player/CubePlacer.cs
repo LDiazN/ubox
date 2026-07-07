@@ -29,6 +29,7 @@ namespace Player
         private RaycastHit[] _hitBuffer;
         private GameObject _highlightBlock;
         private float _timeSinceLastOpr;
+        private BlockType _currentBlockType;
 
         #endregion
 
@@ -44,12 +45,18 @@ namespace Player
             _hitBuffer = new RaycastHit[10];
             _highlightBlock = Instantiate(highlightBlockPrefab, transform.position, quaternion.identity);
             _highlightBlock.SetActive(false);
+            _currentBlockType = BlockType.Grass;
         }
 
         private void Update()
         {
             if (!_camera || GameManager.IsPaused)
                 return;
+
+            if (Input.GetKeyDown(KeyCode.Alpha1))
+                _currentBlockType = BlockType.Grass;
+            else if (Input.GetKeyDown(KeyCode.Alpha2))
+                _currentBlockType = BlockType.Dirt;
 
             _timeSinceLastOpr += Time.deltaTime;
             if (_timeSinceLastOpr < timeBetweenOperations)
@@ -112,7 +119,7 @@ namespace Player
             inside += 0.5f * Vector3.one;
             var nextPosition = inside + hit.normal;
 
-            worldManager.SetBlock(new int3(math.floor((float3)nextPosition)), BlockType.Grass); // TODO support other block types
+            worldManager.SetBlock(new int3(math.floor((float3)nextPosition)), _currentBlockType); // TODO support other block types
         }
 
         private void RemoveBlock(in RaycastHit hit)
