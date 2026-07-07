@@ -1,0 +1,44 @@
+using System;
+using TMPro;
+using Unity.Mathematics;
+using UnityEditor;
+using UnityEngine;
+using World;
+
+namespace UI
+{
+    [RequireComponent(typeof(TextMeshProUGUI))]
+    public class Coordinates : MonoBehaviour
+    {
+        #region Internal State
+
+        private TextMeshProUGUI _text;
+        private string _original;
+
+        #endregion
+
+        private void Awake()
+        {
+            _text = GetComponent<TextMeshProUGUI>();
+            _original = _text.text;
+        }
+
+        private void Update()
+        {
+            if (!Player.Player.Instance)
+            {
+                SetText(0,0,0);
+                return;
+            }
+
+            var pos = new int3(Player.Player.Instance.transform.position);
+            SetText(pos.x, pos.y, pos.z);
+        }
+
+        private void SetText(int x, int y, int z)
+        {
+            var newText = _original.Replace("X", x.ToString()).Replace("Y", y.ToString()).Replace("Z", z.ToString());
+            _text.text = newText;
+        }
+    }
+}
