@@ -46,7 +46,6 @@ public class FirstPersonMovement : MonoBehaviour
         _input.y = Input.GetAxis("Vertical");
         _mouse.x = Input.GetAxis("Mouse X");
         _mouse.y = Input.GetAxis("Mouse Y");
-        _cameraRotationX -= transform.eulerAngles.x;
 
         if (Input.GetButtonDown("Jump"))
         {
@@ -58,8 +57,7 @@ public class FirstPersonMovement : MonoBehaviour
         _cameraRotationX = Mathf.Clamp(_cameraRotationX - _mouse.y * Time.deltaTime * cameraSpeed, -maxCameraRotation, maxCameraRotation);
         if (_camera)
         {
-            var oldRotation = _camera.transform.rotation.eulerAngles;
-            _camera.transform.rotation = Quaternion.Euler(new Vector3(_cameraRotationX, oldRotation.y, oldRotation.z));
+            _camera.transform.localRotation = Quaternion.Euler(_cameraRotationX, 0, 0);
         }
     }
 

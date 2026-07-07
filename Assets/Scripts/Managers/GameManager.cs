@@ -8,6 +8,7 @@ public class GameManager : MonoBehaviour
 
     private static GameManager _instance;
     private bool _isPaused;
+    public static bool IsPaused => _instance?._isPaused ?? false;
 
     #endregion
 
@@ -37,6 +38,7 @@ public class GameManager : MonoBehaviour
     {
         ShowCursor(true);
     }
+
 
     private void Pause()
     {

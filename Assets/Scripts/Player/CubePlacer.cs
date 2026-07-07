@@ -48,7 +48,7 @@ namespace Player
 
         private void Update()
         {
-            if (!_camera)
+            if (!_camera || GameManager.IsPaused)
                 return;
 
             _timeSinceLastOpr += Time.deltaTime;

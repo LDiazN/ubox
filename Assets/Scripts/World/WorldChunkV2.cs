@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Burst;
@@ -27,7 +28,7 @@ namespace World
         private MeshDataResult _meshData;
         // When a new change comes in, enqueue it until the currently-running coroutine is finished.
         private readonly Queue<ChunkData> _changes = new();
-        public bool IsBuilding {get; private set; }
+        public bool IsBuilding { get; private set; }
 
         #endregion
 
@@ -236,11 +237,12 @@ namespace World
                             // copy full vert buffer once per emitted face. Wasteful, I know, but easy to implement
                             for (int v = 0; v < meshData.VertCount; v++)
                             {
+                                var uvOffset = GetUVOffset(chunk.Blocks.Get(x, y, z).Type);
                                 dstVerts[vCursor++] = new Vertex
                                 {
                                     Position = (float3)meshData.Positions[v] + position,
                                     Normal = meshData.Normals[v],
-                                    UV = meshData.UVs[v]
+                                    UV = meshData.UVs[v] + uvOffset
                                 };
                             }
 
@@ -258,6 +260,15 @@ namespace World
                 vertexCount = countResult.TotalVerts
             }, MeshUpdateFlags.DontRecalculateBounds);
         }
+
+        private static Vector2 GetUVOffset(BlockType type)
+        {
+            // Note that this only works bc the atlas has two textures, we have to
+            // make this function smarter for the general case of N textures
+            // Non-empty blocks start at 1
+            return ((float)type - 1) * new Vector2(0, .5f);
+        }
+
 
         IEnumerator BuildChunk(ChunkData chunk)
         {
