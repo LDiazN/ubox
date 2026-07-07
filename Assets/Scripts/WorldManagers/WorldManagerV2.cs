@@ -17,7 +17,8 @@ namespace WorldManagers
         [Tooltip("Initial world size in chunks")]
         [SerializeField] private int3 worldSize = new(16, 1, 16);
         [SerializeField] private WorldChunkV2 chunkPrefab;
-        [Tooltip("How far away, measured in chunks, the player can see")]
+        [Tooltip("How far away the player can see, measured in chunks. First axis is horizontal render " +
+                 "distance, second axis is vertical render distance")]
         [SerializeField] private Vector2 chunkRenderDistance = new(8, 2);
         [Tooltip("How many frames between updates")]
         [SerializeField] private int updateRateInterval = 3;
