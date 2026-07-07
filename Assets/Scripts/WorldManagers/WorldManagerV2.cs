@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Managers;
 using Unity.Burst;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -167,7 +168,7 @@ namespace WorldManagers
             // Unload pending chunks
             foreach (var chunk in _chunksToUnload)
             {
-                Destroy(_loadedChunks[chunk].gameObject);
+                ChunkManager.Dispose(_loadedChunks[chunk]);
                 _loadedChunks.Remove(chunk);
             }
 
@@ -193,7 +194,7 @@ namespace WorldManagers
         private void SpawnChunk(int x, int y, int z)
         {
             Debug.Assert(ChunkMap.IsChunkCoords(x, y, z), "Invalid Non-chunk coordinates");
-            var instance = Instantiate(chunkPrefab, new float3(x, y, z), Quaternion.identity);
+            var instance = ChunkManager.Get(new float3(x, y, z), Quaternion.identity) ;
             _loadedChunks[new(x, y, z)] = instance;
 
             // Trigger a rebuild of this chunk in late update:

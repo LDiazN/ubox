@@ -75,6 +75,12 @@ namespace World
             _meshData.Dispose();
         }
 
+        public void Clear()
+        {
+            _meshFilter.mesh = null;
+            _collider.sharedMesh = null;
+        }
+
         private void OnChunkChanged(ChunkData chunk)
         {
             var chunkCoords = chunk.Position;
@@ -333,9 +339,18 @@ namespace World
                 MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
             mesh.RecalculateBounds();
 
+            // Bake the physics mesh on a background thread to prevent main thread stutter
+            var meshInstanceId = mesh.GetInstanceID();
+            // After measuring this thing in the profiler, I found out that the physics mesh baking was
+            // generating stuttering. Chunks are usually spawned far away so it's safe to bake the mesh
+            // off the render thread
+            var bakeTask = System.Threading.Tasks.Task.Run(() => Physics.BakeMesh(meshInstanceId, false));
+            while (!bakeTask.IsCompleted)
+                yield return null;
+
             _meshFilter.mesh = mesh;
             _collider.sharedMesh = null;
-            _collider.sharedMesh = _meshFilter.mesh;
+            _collider.sharedMesh = mesh;
         }
 
         struct MeshDataResult
