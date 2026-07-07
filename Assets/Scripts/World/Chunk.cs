@@ -55,7 +55,7 @@ namespace World
             {
                 // Note that the blocks are 0-initialized, empty block is 0, so the entire chunk is empty
                 Blocks = new(
-                    WorldChunkV2.ChunkSize, WorldChunkV2.ChunkSize, WorldChunkV2.ChunkSize, Allocator.Persistent
+                    ChunkRenderer.ChunkSize, ChunkRenderer.ChunkSize, ChunkRenderer.ChunkSize, Allocator.Persistent
                     ),
                 Position = chunkCoords
             };
@@ -92,22 +92,22 @@ namespace World
         // converts from world poisition to the corresponding chunk grid coordinates
         public static int3 WorldToChunkGrid(int x, int y, int z)
         {
-            int cx = x % WorldChunkV2.ChunkSize;
-            int cy = y % WorldChunkV2.ChunkSize;
-            int cz = z % WorldChunkV2.ChunkSize;
+            int cx = x % ChunkRenderer.ChunkSize;
+            int cy = y % ChunkRenderer.ChunkSize;
+            int cz = z % ChunkRenderer.ChunkSize;
 
             return new int3(
-                cx < 0 ? x - cx - WorldChunkV2.ChunkSize : x - cx,
-                cy < 0 ? y - cy - WorldChunkV2.ChunkSize : y - cy,
-                cz < 0 ? z - cz - WorldChunkV2.ChunkSize : z - cz
+                cx < 0 ? x - cx - ChunkRenderer.ChunkSize : x - cx,
+                cy < 0 ? y - cy - ChunkRenderer.ChunkSize : y - cy,
+                cz < 0 ? z - cz - ChunkRenderer.ChunkSize : z - cz
             );
         }
 
         public static bool IsChunkCoords(int x, int y, int z)
         {
-            return x % WorldChunkV2.ChunkSize == 0 &&
-                   y % WorldChunkV2.ChunkSize == 0 &&
-                   z % WorldChunkV2.ChunkSize == 0;
+            return x % ChunkRenderer.ChunkSize == 0 &&
+                   y % ChunkRenderer.ChunkSize == 0 &&
+                   z % ChunkRenderer.ChunkSize == 0;
         }
 
         public static bool IsChunkCoords(int3 pos) => IsChunkCoords(pos.x, pos.y, pos.z);
@@ -117,14 +117,14 @@ namespace World
         {
             // Note that % is the remainder, not the modulo.
             // modulo(-15, 16) should be 1, but -15 % 16 is -15
-            int cx = x % WorldChunkV2.ChunkSize;
-            int cy = y % WorldChunkV2.ChunkSize;
-            int cz = z % WorldChunkV2.ChunkSize;
+            int cx = x % ChunkRenderer.ChunkSize;
+            int cy = y % ChunkRenderer.ChunkSize;
+            int cz = z % ChunkRenderer.ChunkSize;
 
             return new int3(
-                cx < 0 ? cx + WorldChunkV2.ChunkSize : cx,
-                cy < 0 ? cy + WorldChunkV2.ChunkSize : cy,
-                cz < 0 ? cz + WorldChunkV2.ChunkSize : cz
+                cx < 0 ? cx + ChunkRenderer.ChunkSize : cx,
+                cy < 0 ? cy + ChunkRenderer.ChunkSize : cy,
+                cz < 0 ? cz + ChunkRenderer.ChunkSize : cz
             );
         }
     }

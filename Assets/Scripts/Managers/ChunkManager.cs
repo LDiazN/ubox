@@ -10,7 +10,7 @@ namespace Managers
     {
         #region Inspector Properties
 
-        [SerializeField] private WorldChunkV2 chunkPrefab;
+        [SerializeField] private ChunkRenderer chunkPrefab;
 
         #endregion
 
@@ -18,14 +18,14 @@ namespace Managers
 
         public static ChunkManager Instance { get; private set; }
 
-        private readonly List<WorldChunkV2> _pool = new();
+        private readonly List<ChunkRenderer> _pool = new();
 
         #endregion
 
         private void Reset()
         {
             // WorldChunkv2.prefab.meta
-            chunkPrefab = AssetLoader.LoadByGuid<WorldChunkV2>("ff9f35488e4f2dd4d88ae144fa47356d");
+            chunkPrefab = AssetLoader.LoadByGuid<ChunkRenderer>("ff9f35488e4f2dd4d88ae144fa47356d");
         }
 
         private void Awake()
@@ -39,7 +39,7 @@ namespace Managers
             Instance = this;
         }
 
-        public static WorldChunkV2 Get(Vector3 position, Quaternion rotation)
+        public static ChunkRenderer Get(Vector3 position, Quaternion rotation)
         {
             if (!Instance || Instance._pool.Count == 0)
                 return Instantiate(Instance.chunkPrefab, position, rotation);
@@ -56,7 +56,7 @@ namespace Managers
             return chunk;
         }
 
-        public static void Dispose(WorldChunkV2 chunk)
+        public static void Dispose(ChunkRenderer chunk)
         {
             if (!Instance)
                 Destroy(chunk.gameObject);

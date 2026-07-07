@@ -5,12 +5,13 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace World
 {
-    public class WorldChunkV2 : MonoBehaviour
+    public class ChunkRenderer : MonoBehaviour
     {
         public const int ChunkSize = 16;
 
@@ -52,7 +53,7 @@ namespace World
             _collider = GetComponent<MeshCollider>();
         }
 
-        private void OnEnable()
+        private void Start()
         {
             var channel = EventsChannel.Instance;
             if (channel)
@@ -61,18 +62,19 @@ namespace World
 
         private void OnDisable()
         {
-            var channel = EventsChannel.Instance;
-            if (channel)
-                channel.OnChunkChanged -= OnChunkChanged;
-
-            if (_changes != null)
-                _changes.Clear();
+            _changes?.Clear();
             IsBuilding = false;
         }
 
         private void OnDestroy()
         {
             _meshData.Dispose();
+
+            // According to the profiler, this part was slowing down the activation and deactivation for the
+            // chunk pool when done in OnEnable, so we moved it here
+            var channel = EventsChannel.Instance;
+            if (channel)
+                channel.OnChunkChanged -= OnChunkChanged;
         }
 
         public void Clear()
@@ -81,8 +83,11 @@ namespace World
             _collider.sharedMesh = null;
         }
 
-        private void OnChunkChanged(ChunkData chunk)
+        public void OnChunkChanged(ChunkData chunk)
         {
+            if (!gameObject.activeSelf || !enabled)
+                return;
+
             var chunkCoords = chunk.Position;
             var currentCoords = new int3((int)transform.position.x, (int)transform.position.y, (int)transform.position.z);
 
@@ -93,12 +98,12 @@ namespace World
 
             if (!IsBuilding)
             {
-                StartCoroutine(BuildQueueRoutine());
+                StartCoroutine(BuildQueue());
             }
         }
 
         // This additional coroutine saves us from adding an update method
-        private IEnumerator BuildQueueRoutine()
+        private IEnumerator BuildQueue()
         {
             IsBuilding = true;
             while (_changes.Count > 0)
@@ -288,7 +293,7 @@ namespace World
             var countHandle = countJob.Schedule();
 
             while (!countHandle.IsCompleted)
-                yield return null;
+                yield return new WaitForSeconds(0.1f);
 
             countHandle.Complete();
 
