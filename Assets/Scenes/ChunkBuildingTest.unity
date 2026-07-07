@@ -983,6 +983,14 @@ PrefabInstance:
       propertyPath: showGizmos
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6540517506149634195, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}
+      propertyPath: chunkRenderDistance
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6540517506149634195, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}
+      propertyPath: chunkRenderDistance.y
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 8185982774954668225, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

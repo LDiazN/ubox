@@ -18,7 +18,7 @@ namespace WorldManagers
         [SerializeField] private int3 worldSize = new(16, 1, 16);
         [SerializeField] private WorldChunkV2 chunkPrefab;
         [Tooltip("How far away, measured in chunks, the player can see")]
-        [SerializeField] private int chunkRenderDistance;
+        [SerializeField] private Vector2 chunkRenderDistance = new(8, 2);
         [Tooltip("How many frames between updates")]
         [SerializeField] private int updateRateInterval = 3;
         [SerializeField] private bool showGizmos = true;
@@ -103,8 +103,9 @@ namespace WorldManagers
             var chunkSize = WorldChunkV2.ChunkSize;
 
             // 1. Make sure that all needed chunks are internally created and rendered
-            var minChunk = playerChunk - chunkSize * new int3(chunkRenderDistance, chunkRenderDistance, chunkRenderDistance);
-            var maxChunk = playerChunk + chunkSize * new int3(chunkRenderDistance, chunkRenderDistance, chunkRenderDistance);
+            var intRenderDistance = new int2(chunkRenderDistance);
+            var minChunk = playerChunk - chunkSize * new int3(intRenderDistance.x, intRenderDistance.y, intRenderDistance.x);
+            var maxChunk = playerChunk + chunkSize * new int3(intRenderDistance.x, intRenderDistance.y, intRenderDistance.x);
 
             for (var x = minChunk.x; x < maxChunk.x; x += chunkSize)
                 for (var y = minChunk.y; y < maxChunk.y; y += chunkSize)
