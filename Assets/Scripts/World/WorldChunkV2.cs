@@ -264,7 +264,7 @@ namespace World
         private static Vector2 GetUVOffset(BlockType type)
         {
             // Note that this only works bc the atlas has two textures, we have to
-            // make this function smarter for the general case of N textures
+            // make this function smarter for the general case of N textures.
             // Non-empty blocks start at 1
             return ((float)type - 1) * new Vector2(0, .5f);
         }

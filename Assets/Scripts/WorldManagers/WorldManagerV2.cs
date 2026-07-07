@@ -6,6 +6,7 @@ using UnityEngine;
 using Utils;
 using World;
 using PPlayer = Player.Player;
+using noise = Unity.Mathematics.noise;
 
 namespace WorldManagers
 {
@@ -21,6 +22,16 @@ namespace WorldManagers
         [Tooltip("How many frames between updates")]
         [SerializeField] private int updateRateInterval = 3;
         [SerializeField] private bool showGizmos = true;
+
+        [Header("Procedural generation")]
+        [Tooltip("Minimum height such that every block below this height is a solid block")]
+        [Min(1)]
+        [SerializeField] private int minHeight = 1;
+        [Min(1)]
+        [Tooltip("Max height that a solid block can reach")]
+        [SerializeField] private int maxHeight = 16;
+        [Min(0)]
+        [SerializeField] private float noiseScale = 1;
 
         #endregion
 
@@ -195,7 +206,7 @@ namespace WorldManagers
                 _changed.Add(ChunkMap.WorldToChunkGrid(x, y, z));
             }
             else
-                _changeList.Add((new int3(x,y,z), type));
+                _changeList.Add((new int3(x, y, z), type));
         }
 
         public void SetBlock(int3 pos, BlockType type) => SetBlock(pos.x, pos.y, pos.z, type);
@@ -213,46 +224,63 @@ namespace WorldManagers
         [BurstCompile]
         struct PopulateChunkJob : IJob
         {
-            public int Y;
-            public int3 WorldSize;
+            public int X, Y, Z;
+            public int MaxHeight, MinHeight;
+            public float NoiseScale;
             public ChunkData ChunkData;
+
             public void Execute()
             {
+                // We will use Simplex noise as height map
                 const int chunkSize = WorldChunkV2.ChunkSize;
-                var blockType = Y > WorldSize.y * chunkSize ? BlockType.Empty : BlockType.Grass;
                 for (var dx = 0; dx < chunkSize; dx++)
-                    for (var dy = 0; dy < chunkSize; dy++)
-                        for (var dz = 0; dz < chunkSize; dz++)
-                            ChunkData.Blocks.Set(dx, dy, dz, new BlockData { Type = blockType });
+                for (var dy = 0; dy < chunkSize; dy++)
+                for (var dz = 0; dz < chunkSize; dz++)
+                {
+                    var sn = noise.snoise(NoiseScale * new float2(X + dx, Z + dz));
+                    var height = (float) (MaxHeight - MinHeight);
+                    var isSolid = sn * height + MinHeight >= (Y + dy);
+                    var blockType = isSolid ? BlockType.Grass : BlockType.Empty;
+                    ChunkData.Blocks.Set(dx, dy, dz, new BlockData { Type = blockType });
+                }
             }
         }
 
         // Fills the chunk specified by its chunk position
-        private void PopulateChunk(int x, int y, int z)
-        {
-            const int chunkSize = WorldChunkV2.ChunkSize;
-            Debug.Assert(x % chunkSize == 0 &&
-                         y % chunkSize == 0 &&
-                         z % chunkSize == 0,
-                "Unexpected non-chunk position");
+            private void PopulateChunk(int x, int y, int z)
+            {
+                const int chunkSize = WorldChunkV2.ChunkSize;
+                Debug.Assert(x % chunkSize == 0 &&
+                             y % chunkSize == 0 &&
+                             z % chunkSize == 0,
+                    "Unexpected non-chunk position");
 
 
-            Map.AddChunk(x, y, z);
-            Map.GetChunk(x, y, z, out var data);
+                Map.AddChunk(x, y, z);
+                Map.GetChunk(x, y, z, out var data);
 
-            // Use a job to offload this to worker threads;
-            var populateJob = new PopulateChunkJob { Y = y, WorldSize = worldSize, ChunkData = data };
-            var handle = populateJob.Schedule();
-            _pendingJobs.Add((handle, new int3(x, y, z)));
-        }
+                // Use a job to offload this to worker threads;
+                var populateJob = new PopulateChunkJob
+                {
+                    X = x,
+                    Y = y,
+                    Z = z,
+                    MinHeight = minHeight,
+                    MaxHeight = maxHeight,
+                    NoiseScale = noiseScale,
+                    ChunkData = data
+                };
+                var handle = populateJob.Schedule();
+                _pendingJobs.Add((handle, new int3(x, y, z)));
+            }
 
-        private bool InPending(int x, int y, int z)
-        {
-            foreach (var (_, chunkPos) in _pendingJobs)
-                if (chunkPos.Equals(new int3(x, y, z)))
-                    return true;
+            private bool InPending(int x, int y, int z)
+            {
+                foreach (var (_, chunkPos) in _pendingJobs)
+                    if (chunkPos.Equals(new int3(x, y, z)))
+                        return true;
 
-            return false;
+                return false;
+            }
         }
     }
-}

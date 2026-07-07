@@ -976,6 +976,10 @@ PrefabInstance:
       value: WorldManagerv2
       objectReference: {fileID: 0}
     - target: {fileID: 6540517506149634195, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}
+      propertyPath: noiseScale
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 6540517506149634195, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}
       propertyPath: showGizmos
       value: 0
       objectReference: {fileID: 0}
