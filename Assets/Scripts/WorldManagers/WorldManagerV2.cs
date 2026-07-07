@@ -237,12 +237,24 @@ namespace WorldManagers
                 for (var dy = 0; dy < chunkSize; dy++)
                 for (var dz = 0; dz < chunkSize; dz++)
                 {
-                    var sn = noise.snoise(NoiseScale * new float2(X + dx, Z + dz));
-                    var height = (float) (MaxHeight - MinHeight);
-                    var isSolid = sn * height + MinHeight >= (Y + dy);
-                    var blockType = isSolid ? BlockType.Grass : BlockType.Empty;
+                    // Traverse Y reversed so you can know if the block of the current position is air
+                    var isSolid = IsSolid(dx, dy, dz);
+                    var topIsSolid = IsSolid(dx, dy + 1, dz);
+                    var blockType = BlockType.Empty;
+
+                    if (isSolid)
+                        blockType = topIsSolid ? BlockType.Dirt : BlockType.Grass;
+
                     ChunkData.Blocks.Set(dx, dy, dz, new BlockData { Type = blockType });
                 }
+            }
+
+            private bool IsSolid(int x, int y, int z)
+            {
+                var sn = noise.snoise(NoiseScale * new float2(X + x, Z + z));
+                var height = (float) (MaxHeight - MinHeight);
+                var isSolid = sn * height + MinHeight >= (Y + y);
+                return isSolid;
             }
         }
 
