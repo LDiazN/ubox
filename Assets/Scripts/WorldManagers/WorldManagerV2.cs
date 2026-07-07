@@ -40,6 +40,11 @@ namespace WorldManagers
 
         private readonly List<(JobHandle, int3)> _pendingJobs = new();
 
+        // Sometimes someone might try to modify a chunk while the chunk is being rendered.
+        // To avoid race conditions with chunk data, we save the request in this queue and apply
+        // it when the chunk renderer is finished
+        private readonly List<(int3, BlockType)> _changeList = new();
+
         #endregion
 
         private void Reset()
@@ -62,7 +67,7 @@ namespace WorldManagers
 
         private void Update()
         {
-            //Mark pending blocks as changed and clean completed ones
+            // Mark pending blocks as changed and clean completed ones
             // (run every frame for responsiveness, chunk rendering depends on this)
             for (int i = _pendingJobs.Count - 1; i >= 0; i--)
             {
@@ -75,6 +80,7 @@ namespace WorldManagers
                 }
             }
 
+            // Use a different update rate for this function, it's expensive
             if (updateRateInterval > 0 && Time.frameCount % updateRateInterval != 0)
                 return;
 
@@ -123,6 +129,18 @@ namespace WorldManagers
 
         private void LateUpdate()
         {
+            // Apply queue of pending changes
+            for (int i = _changeList.Count - 1; i >= 0; i--)
+            {
+                var (pos, type) = _changeList[i];
+                if (!IsBusy(pos.x, pos.y, pos.z))
+                {
+                    SetBlock(pos, type);
+                    _changeList.RemoveAt(i);
+                }
+            }
+
+
             // Update meshes of chunks that changed recently
             foreach (var item in _changed)
             {
@@ -169,34 +187,28 @@ namespace WorldManagers
             _changed.Add(new(x, y, z));
         }
 
-        private void InitChunkGameobjects()
-        {
-            for (var x = 0; x < worldSize.x; x++)
-                for (var y = 0; y < worldSize.y; y++)
-                    for (var z = 0; z < worldSize.z; z++)
-                    {
-                        var position = new int3(
-                            x * WorldChunkV2.ChunkSize,
-                            y * WorldChunkV2.ChunkSize,
-                            z * WorldChunkV2.ChunkSize
-                        );
-
-                        var newChunk = Instantiate(chunkPrefab,
-                            new float3(position),
-                            Quaternion.identity);
-
-                        _loadedChunks[position] = newChunk;
-                    }
-        }
-
         public void SetBlock(int x, int y, int z, BlockType type)
         {
-            Map.SetBlock(x, y, z, new BlockData { Type = type });
-            _changed.Add(ChunkMap.WorldToChunkGrid(x, y, z));
+            if (!IsBusy(x, y, z))
+            {
+                Map.SetBlock(x, y, z, new BlockData { Type = type });
+                _changed.Add(ChunkMap.WorldToChunkGrid(x, y, z));
+            }
+            else
+                _changeList.Add((new int3(x,y,z), type));
         }
 
         public void SetBlock(int3 pos, BlockType type) => SetBlock(pos.x, pos.y, pos.z, type);
 
+        private bool IsBusy(int x, int y, int z)
+        {
+            var chunkCoords = ChunkMap.WorldToChunkGrid(x, y, z);
+            var loaded = _loadedChunks.TryGetValue(chunkCoords, out var chunk);
+            if (!loaded)
+                return false;
+
+            return chunk.IsBuilding;
+        }
 
         [BurstCompile]
         struct PopulateChunkJob : IJob

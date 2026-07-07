@@ -24,7 +24,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        Cursor.visible = false;
+        ShowCursor(false);
     }
 
     private void Update()
@@ -35,7 +35,7 @@ public class GameManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        Cursor.visible = true;
+        ShowCursor(true);
     }
 
     private void Pause()
@@ -43,5 +43,12 @@ public class GameManager : MonoBehaviour
         _isPaused = !_isPaused;
         EventsChannel.Pause(_isPaused);
         Time.timeScale = _isPaused ? 0 : 1;
+        ShowCursor(_isPaused);
+    }
+
+    private void ShowCursor(bool visible)
+    {
+        Cursor.visible = visible;
+        Cursor.lockState = visible ? CursorLockMode.None : CursorLockMode.Locked;
     }
 }

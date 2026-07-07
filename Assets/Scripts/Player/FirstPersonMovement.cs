@@ -52,12 +52,19 @@ public class FirstPersonMovement : MonoBehaviour
         {
             _jumpRequested = true;
         }
+
+        // Camera and body look rotation
+        transform.Rotate(new Vector3(0, _mouse.x, 0) * (Time.deltaTime * cameraSpeed));
+        _cameraRotationX = Mathf.Clamp(_cameraRotationX - _mouse.y * Time.deltaTime * cameraSpeed, -maxCameraRotation, maxCameraRotation);
+        if (_camera)
+        {
+            var oldRotation = _camera.transform.rotation.eulerAngles;
+            _camera.transform.rotation = Quaternion.Euler(new Vector3(_cameraRotationX, oldRotation.y, oldRotation.z));
+        }
     }
 
     private void FixedUpdate()
     {
-        transform.Rotate(new Vector3(0, _mouse.x, 0) * (Time.fixedDeltaTime * cameraSpeed));
-
         // Jump and Gravity
         if (_controller.isGrounded)
         {
@@ -77,12 +84,5 @@ public class FirstPersonMovement : MonoBehaviour
         movement.y = _verticalVelocity;
 
         _controller.Move(movement * Time.fixedDeltaTime);
-        // Camera rotation
-        _cameraRotationX = Mathf.Clamp(_cameraRotationX - _mouse.y * Time.fixedDeltaTime * cameraSpeed, -maxCameraRotation, maxCameraRotation);
-        if (!_camera)
-            return;
-
-        var oldRotation = _camera.transform.rotation.eulerAngles;
-        _camera.transform.rotation = Quaternion.Euler(new Vector3(_cameraRotationX, oldRotation.y, oldRotation.z));
     }
 }

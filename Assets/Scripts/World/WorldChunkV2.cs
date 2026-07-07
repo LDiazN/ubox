@@ -27,7 +27,7 @@ namespace World
         private MeshDataResult _meshData;
         // When a new change comes in, enqueue it until the currently-running coroutine is finished.
         private readonly Queue<ChunkData> _changes = new();
-        private bool _isBuilding;
+        public bool IsBuilding {get; private set; }
 
         #endregion
 
@@ -66,7 +66,7 @@ namespace World
 
             if (_changes != null)
                 _changes.Clear();
-            _isBuilding = false;
+            IsBuilding = false;
         }
 
         private void OnDestroy()
@@ -84,7 +84,7 @@ namespace World
 
             _changes.Enqueue(chunk);
 
-            if (!_isBuilding)
+            if (!IsBuilding)
             {
                 StartCoroutine(BuildQueueRoutine());
             }
@@ -93,13 +93,13 @@ namespace World
         // This additional coroutine saves us from adding an update method
         private IEnumerator BuildQueueRoutine()
         {
-            _isBuilding = true;
+            IsBuilding = true;
             while (_changes.Count > 0)
             {
                 var chunk = _changes.Dequeue();
                 yield return BuildChunk(chunk);
             }
-            _isBuilding = false;
+            IsBuilding = false;
         }
 
         static bool InChunk(int x, int y, int z) =>

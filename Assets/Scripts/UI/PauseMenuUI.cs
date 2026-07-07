@@ -19,7 +19,6 @@ namespace UI
         private void OnEnable()
         {
             var events = EventsChannel.Instance;
-            Debug.Log("Trying to wire");
             if (events)
             {
                 events.OnPause += OnPause;
