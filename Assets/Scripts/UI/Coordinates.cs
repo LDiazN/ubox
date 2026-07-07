@@ -27,7 +27,7 @@ namespace UI
         {
             if (!Player.Player.Instance)
             {
-                SetText(0,0,0);
+                SetText(0, 0, 0);
                 return;
             }
 
@@ -37,7 +37,7 @@ namespace UI
 
         private void SetText(int x, int y, int z)
         {
-            var newText = _original.Replace("X", x.ToString()).Replace("Y", y.ToString()).Replace("Z", z.ToString());
+            var newText = string.Format(_original, x, y, z);
             _text.text = newText;
         }
     }
