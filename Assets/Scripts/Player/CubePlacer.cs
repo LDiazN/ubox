@@ -1,7 +1,8 @@
 using Managers;
+using Settings;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.InputSystem.Layouts;
+using UnityEngine.InputSystem;
 using Utils;
 using World;
 using WorldManagers;
@@ -29,9 +30,14 @@ namespace Player
 
         private Camera _camera;
         private RaycastHit[] _hitBuffer;
+        private int _nHits;
+        private RaycastHit _closest;
         private GameObject _highlightBlock;
         private float _timeSinceLastOpr;
         public BlockType CurrentBlockType { get; private set; }
+        private InputBindings _input;
+        private bool _shouldPlace;
+        private bool _shouldRemove;
 
         #endregion
 
@@ -48,12 +54,32 @@ namespace Player
             _highlightBlock = Instantiate(highlightBlockPrefab, transform.position, quaternion.identity);
             _highlightBlock.SetActive(false);
             CurrentBlockType = BlockType.Grass;
+            _input = new InputBindings();
+        }
+
+        private void OnEnable()
+        {
+            _input.Player.Enable();
+            _input.Player.PlaceBlock.started += OnPlaceBlock;
+            _input.Player.PlaceBlock.canceled += OnPlaceBlock;
+            _input.Player.RemoveBlock.started += OnRemoveBlock;
+            _input.Player.RemoveBlock.canceled += OnRemoveBlock;
+        }
+
+        private void OnDisable()
+        {
+            _input.Player.PlaceBlock.started -= OnPlaceBlock;
+            _input.Player.PlaceBlock.canceled -= OnPlaceBlock;
+            _input.Player.RemoveBlock.started -= OnRemoveBlock;
+            _input.Player.RemoveBlock.canceled -= OnRemoveBlock;
         }
 
         private void Update()
         {
             if (!_camera || GameManager.IsPaused)
                 return;
+
+            _timeSinceLastOpr += Time.deltaTime;
 
             var old = CurrentBlockType;
             if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -64,39 +90,34 @@ namespace Player
             if (old != CurrentBlockType)
                 EventsChannel.ChangePlayerBlock(CurrentBlockType);
 
-            _timeSinceLastOpr += Time.deltaTime;
-            if (_timeSinceLastOpr < timeBetweenOperations)
-                return;
-
+            // Update the closest block
             var ray = GetRay();
-
-            var nHits = Physics.RaycastNonAlloc(ray, _hitBuffer, maxBlockPlaceDistance);
-            if (nHits == 0)
+            _nHits = Physics.RaycastNonAlloc(ray, _hitBuffer, maxBlockPlaceDistance);
+            if (_nHits == 0)
             {
                 _highlightBlock.SetActive(false);
                 return;
             }
-
-            var closestHit = GetClosest(_hitBuffer, nHits);
+            _closest = GetClosest(_hitBuffer, _nHits);
 
             // Keep in mind that we hit the chunk itself, not just the block. We have to derive the block position
             // from the Hit location
-            PlaceHighlight(closestHit);
+            PlaceHighlight(_closest);
 
-            // Now manage addition or deletion of blocks
-            if (Input.GetMouseButton(0))
+            if (_timeSinceLastOpr < timeBetweenOperations)
+                return;
+
+            if (_shouldPlace)
             {
-                PlaceBlock(closestHit);
-                _timeSinceLastOpr = 0;
-            }
-            else if (Input.GetMouseButton(1))
-            {
-                RemoveBlock(closestHit);
+                PlaceBlock(_closest);
                 _timeSinceLastOpr = 0;
             }
 
-            if (Input.GetMouseButtonUp(1) || Input.GetMouseButtonUp(0))
+            if (_shouldRemove)
+            {
+                RemoveBlock(_closest);
                 _timeSinceLastOpr = 0;
+            }
         }
 
         private void OnDrawGizmos()
@@ -104,6 +125,32 @@ namespace Player
             var ray = _camera ? GetRay() : new Ray { origin = transform.position, direction = transform.forward };
             Gizmos.color = Color.blue;
             Gizmos.DrawLine(ray.origin, ray.origin + maxBlockPlaceDistance * ray.direction);
+        }
+
+        private void OnPlaceBlock(InputAction.CallbackContext context)
+        {
+            if (context.canceled)
+            {
+                // Reboots the cooldown on mouse up
+                _shouldPlace = false;
+                _timeSinceLastOpr = timeBetweenOperations;
+                return;
+            }
+
+            _shouldPlace = true;
+        }
+
+        private void OnRemoveBlock(InputAction.CallbackContext context)
+        {
+            if (context.canceled)
+            {
+                // Reboots the cooldown on mouse up
+                _shouldRemove = false;
+                _timeSinceLastOpr = timeBetweenOperations;
+                return;
+            }
+
+            _shouldRemove = true;
         }
 
         private void PlaceHighlight(in RaycastHit hit)
