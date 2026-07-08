@@ -177,7 +177,7 @@ namespace Player
 
         private void PlaceBlock(in RaycastHit hit)
         {
-            var worldManager = WorldManagerV2.Instance;
+            var worldManager = WorldManager.Instance;
             if (!worldManager)
                 return;
 
@@ -194,7 +194,7 @@ namespace Player
 
         private void RemoveBlock(in RaycastHit hit)
         {
-            var worldManager = WorldManagerV2.Instance;
+            var worldManager = WorldManager.Instance;
             if (!worldManager)
                 return;
 

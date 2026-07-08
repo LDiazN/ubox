@@ -11,7 +11,7 @@ using noise = Unity.Mathematics.noise;
 
 namespace WorldManagers
 {
-    public class WorldManagerV2 : MonoBehaviour
+    public class WorldManager : MonoBehaviour
     {
         #region Inspector Properties
 
@@ -43,7 +43,7 @@ namespace WorldManagers
         #region Internal State
 
         public ChunkMap Map { get; private set; }
-        public static WorldManagerV2 Instance { get; private set; }
+        public static WorldManager Instance { get; private set; }
 
         // Ids of modified chunks
         private readonly HashSet<int3> _changed = new();
@@ -111,7 +111,7 @@ namespace WorldManagers
 
             var playerPosition = new int3(PPlayer.Instance.transform.position);
             var playerChunk = ChunkMap.WorldToChunkGrid(playerPosition.x, playerPosition.y, playerPosition.z);
-            var chunkSize = ChunkRenderer.ChunkSize;
+            var chunkSize = ChunkMap.ChunkSize;
 
             // 1. Make sure that all needed chunks are internally created and rendered
             var intRenderDistance = new int2(chunkRenderDistance);
@@ -199,7 +199,7 @@ namespace WorldManagers
                 return;
 
             Gizmos.color = Color.red;
-            var chunkSize = ChunkRenderer.ChunkSize;
+            var chunkSize = ChunkMap.ChunkSize;
             foreach (var entry in Map.Map)
                 Gizmos.DrawWireCube(new float3(entry.Value.Position) + 0.5f * new float3(chunkSize),
                     new float3(chunkSize));
@@ -249,7 +249,7 @@ namespace WorldManagers
             public void Execute()
             {
                 // We will use Simplex noise as height map
-                const int chunkSize = ChunkRenderer.ChunkSize;
+                const int chunkSize = ChunkMap.ChunkSize;
                 for (var dx = 0; dx < chunkSize; dx++)
                 for (var dy = 0; dy < chunkSize; dy++)
                 for (var dz = 0; dz < chunkSize; dz++)
@@ -278,7 +278,7 @@ namespace WorldManagers
         // Fills the chunk specified by its chunk position
         private void PopulateChunk(int x, int y, int z)
         {
-            const int chunkSize = ChunkRenderer.ChunkSize;
+            const int chunkSize = ChunkMap.ChunkSize;
             Debug.Assert(x % chunkSize == 0 &&
                          y % chunkSize == 0 &&
                          z % chunkSize == 0,

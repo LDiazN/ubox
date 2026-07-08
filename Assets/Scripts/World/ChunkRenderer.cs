@@ -11,7 +11,6 @@ namespace World
 {
     public class ChunkRenderer : MonoBehaviour
     {
-        public const int ChunkSize = 16;
 
         #region Inspector Properties
 
@@ -108,9 +107,9 @@ namespace World
         }
 
         static bool InChunk(int x, int y, int z) =>
-            x is >= 0 and < ChunkSize &&
-            y is >= 0 and < ChunkSize &&
-            z is >= 0 and < ChunkSize;
+            x is >= 0 and < ChunkMap.ChunkSize &&
+            y is >= 0 and < ChunkMap.ChunkSize &&
+            z is >= 0 and < ChunkMap.ChunkSize;
 
         void InitMeshData()
         {
@@ -171,9 +170,9 @@ namespace World
             // First pass: count total verts/indices needed
             int totalVerts = 0;
             int totalIndices = 0;
-            for (var x = 0; x < ChunkSize; x++)
-            for (var y = 0; y < ChunkSize; y++)
-            for (var z = 0; z < ChunkSize; z++)
+            for (var x = 0; x < ChunkMap.ChunkSize; x++)
+            for (var y = 0; y < ChunkMap.ChunkSize; y++)
+            for (var z = 0; z < ChunkMap.ChunkSize; z++)
             {
                 if (!Occupied(x, y, z, chunk)) continue;
                 // TODO we could optimize the vertex buffer by storing one cube if ANY face is visible, and then
@@ -223,9 +222,9 @@ namespace World
             // vCursor: next available vertex position
             // iCursor: next available index position
             int vCursor = 0, iCursor = 0;
-            for (int x = 0; x < ChunkSize; x++)
-            for (int y = 0; y < ChunkSize; y++)
-            for (int z = 0; z < ChunkSize; z++)
+            for (int x = 0; x < ChunkMap.ChunkSize; x++)
+            for (int y = 0; y < ChunkMap.ChunkSize; y++)
+            for (int z = 0; z < ChunkMap.ChunkSize; z++)
             {
                 if (!Occupied(x, y, z, chunk)) continue;
                 float3 position = new(x, y, z);
@@ -260,8 +259,8 @@ namespace World
             data.subMeshCount = 1;
             data.SetSubMesh(0, new SubMeshDescriptor(0, countResult.TotalIndices)
             {
-                bounds = new Bounds(new Vector3(ChunkSize, ChunkSize, ChunkSize) * 0.5f,
-                    new Vector3(ChunkSize, ChunkSize, ChunkSize)),
+                bounds = new Bounds(new Vector3(ChunkMap.ChunkSize, ChunkMap.ChunkSize, ChunkMap.ChunkSize) * 0.5f,
+                    new Vector3(ChunkMap.ChunkSize, ChunkMap.ChunkSize, ChunkMap.ChunkSize)),
                 vertexCount = countResult.TotalVerts
             }, MeshUpdateFlags.DontRecalculateBounds);
         }

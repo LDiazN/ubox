@@ -68,11 +68,11 @@ namespace UI
             if (!_visible)
                 return;
 
-            var wm = WorldManagerV2.Instance;
+            var wm = WorldManager.Instance;
 
             var loadedChunks = wm?.LoadedChunks ?? 0;
             var createdChunks = wm?.CreatedChunks ?? 0;
-            var chunkSize = ChunkRenderer.ChunkSize;
+            var chunkSize = ChunkMap.ChunkSize;
             var bytes = createdChunks * chunkSize * chunkSize * chunkSize;
             var memoryPressure = wm ? FormatBytes(bytes) : "Unknown";
             var renderDistance = "Unknown";

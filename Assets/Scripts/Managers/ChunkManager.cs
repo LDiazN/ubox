@@ -25,7 +25,7 @@ namespace Managers
 
         private void Reset()
         {
-            // WorldChunkv2.prefab.meta
+            // ChunkRenderer.prefab.meta
             chunkPrefab = AssetLoader.LoadByGuid<ChunkRenderer>("ff9f35488e4f2dd4d88ae144fa47356d");
         }
 

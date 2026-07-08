@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 39432938542287013}
   - component: {fileID: 984985694318845184}
   m_Layer: 0
-  m_Name: WorldChunkv2
+  m_Name: ChunkRenderer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
