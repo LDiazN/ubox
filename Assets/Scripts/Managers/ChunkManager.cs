@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using Utils;
 using World;
@@ -17,7 +15,7 @@ namespace Managers
 
         #region Internal State
 
-        public static ChunkManager Instance { get; private set; }
+        private static ChunkManager Instance { get; set; }
 
         private readonly List<ChunkRenderer> _pool = new();
 

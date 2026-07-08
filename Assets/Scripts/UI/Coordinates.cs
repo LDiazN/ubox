@@ -1,9 +1,6 @@
-using System;
 using TMPro;
 using Unity.Mathematics;
-using UnityEditor;
 using UnityEngine;
-using World;
 
 namespace UI
 {
