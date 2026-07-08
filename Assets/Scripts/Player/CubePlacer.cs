@@ -1,6 +1,7 @@
 using Managers;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.InputSystem.Layouts;
 using Utils;
 using World;
 using WorldManagers;
@@ -83,16 +84,19 @@ namespace Player
             PlaceHighlight(closestHit);
 
             // Now manage addition or deletion of blocks
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButton(0))
             {
                 PlaceBlock(closestHit);
                 _timeSinceLastOpr = 0;
             }
-            else if (Input.GetMouseButtonDown(1))
+            else if (Input.GetMouseButton(1))
             {
                 RemoveBlock(closestHit);
                 _timeSinceLastOpr = 0;
             }
+
+            if (Input.GetMouseButtonUp(1) || Input.GetMouseButtonUp(0))
+                _timeSinceLastOpr = 0;
         }
 
         private void OnDrawGizmos()
