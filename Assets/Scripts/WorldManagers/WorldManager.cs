@@ -114,11 +114,11 @@ namespace WorldManagers
             var chunkSize = ChunkMap.ChunkSize;
 
             // 1. Make sure that all needed chunks are internally created and rendered
-            var intRenderDistance = new int2(chunkRenderDistance);
+            var rd = new int2(chunkRenderDistance);
             var minChunk = playerChunk -
-                           chunkSize * new int3(intRenderDistance.x, intRenderDistance.y, intRenderDistance.x);
+                           chunkSize * new int3(rd.x, rd.y, rd.x);
             var maxChunk = playerChunk +
-                           chunkSize * new int3(intRenderDistance.x, intRenderDistance.y, intRenderDistance.x);
+                           chunkSize * new int3(rd.x, rd.y, rd.x);
 
             for (var x = minChunk.x; x < maxChunk.x; x += chunkSize)
             for (var y = minChunk.y; y < maxChunk.y; y += chunkSize)
