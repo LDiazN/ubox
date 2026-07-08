@@ -87,7 +87,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FirstPersonMovement
   movementSpeed: 5
   cameraSpeed: 200
-  maxCameraRotation: 45
+  maxCameraRotation: 70
   gravity: 9
   jumpHeight: 1.1
 --- !u!114 &5989984694292841474
