@@ -15,12 +15,11 @@ namespace WorldManagers
     {
         #region Inspector Properties
 
-        [Tooltip("Initial world size in chunks")]
-        [SerializeField] private int3 worldSize = new(16, 1, 16);
-        [SerializeField] private ChunkRenderer chunkPrefab;
         [Tooltip("How far away the player can see, measured in chunks. First axis is horizontal render " +
                  "distance, second axis is vertical render distance")]
         [SerializeField] private Vector2 chunkRenderDistance = new(8, 2);
+        public Vector2 ChunkRenderDistance => chunkRenderDistance;
+
         [Tooltip("How many frames between updates")]
         [SerializeField] private int updateRateInterval = 3;
         [SerializeField] private bool showGizmos = true;
@@ -52,6 +51,8 @@ namespace WorldManagers
         private readonly List<int3> _chunksToUnload = new();
 
         private readonly Dictionary<int3, JobHandle> _pendingJobs = new();
+        public int PendingJobsCount => _pendingJobs.Count;
+
         private readonly List<int3> _completedJobsBuffer = new();
 
         // Sometimes someone might try to modify a chunk while the chunk is being rendered.
@@ -59,13 +60,11 @@ namespace WorldManagers
         // it when the chunk renderer is finished
         private readonly List<(int3, BlockType)> _changeList = new();
 
-        #endregion
+        public int LoadedChunks => _loadedChunks.Count;
 
-        private void Reset()
-        {
-            // WorldChunkv2.prefab.meta
-            chunkPrefab = AssetLoader.LoadByGuid<ChunkRenderer>("ff9f35488e4f2dd4d88ae144fa47356d");
-        }
+        public int CreatedChunks => Map.Map.Count;
+
+        #endregion
 
         private void Awake()
         {
