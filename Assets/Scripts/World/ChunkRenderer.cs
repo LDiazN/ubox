@@ -25,8 +25,10 @@ namespace World
         public MeshCollider Collider { get; private set; }
 
         public MeshRenderer MeshRenderer { get; private set; }
+
         // Cache mesh data from input mesh
         private MeshDataResult _meshData;
+
         // When a new change comes in, enqueue it until the currently-running coroutine is finished.
         private readonly Queue<ChunkData> _changes = new();
         public bool IsBuilding { get; private set; }
@@ -41,10 +43,11 @@ namespace World
         }
 
         // Hardcoded direction of each face in the cube
-        static readonly int3[] FaceNormals = {
-            new (1,0,0), new (-1,0,0),
-            new (0,1,0), new (0,-1,0),
-            new (0,0,1), new (0,0,-1)
+        static readonly int3[] FaceNormals =
+        {
+            new(1, 0, 0), new(-1, 0, 0),
+            new(0, 1, 0), new(0, -1, 0),
+            new(0, 0, 1), new(0, 0, -1)
         };
 
         private void Awake()
@@ -52,7 +55,6 @@ namespace World
             _meshFilter = GetComponent<MeshFilter>();
             Collider = GetComponent<MeshCollider>();
             MeshRenderer = GetComponent<MeshRenderer>();
-
         }
 
         private void OnDisable()
@@ -78,7 +80,8 @@ namespace World
                 return;
 
             var chunkCoords = chunk.Position;
-            var currentCoords = new int3((int)transform.position.x, (int)transform.position.y, (int)transform.position.z);
+            var currentCoords = new int3((int)transform.position.x, (int)transform.position.y,
+                (int)transform.position.z);
 
             if (!currentCoords.Equals(chunkCoords))
                 return;
@@ -100,6 +103,7 @@ namespace World
                 var chunk = _changes.Dequeue();
                 yield return BuildChunk(chunk);
             }
+
             IsBuilding = false;
         }
 
@@ -168,24 +172,24 @@ namespace World
             int totalVerts = 0;
             int totalIndices = 0;
             for (var x = 0; x < ChunkSize; x++)
-                for (var y = 0; y < ChunkSize; y++)
-                    for (var z = 0; z < ChunkSize; z++)
-                    {
-                        if (!Occupied(x, y, z, chunk)) continue;
-                        // TODO we could optimize the vertex buffer by storing one cube if ANY face is visible, and then
-                        // only pushing the visible faces to the index buffer
-                        for (var f = 0; f < 6; f++)
-                        {
-                            // Use FaceNormals to check neighbors: Get the normal of the current face, and check if the
-                            // cell in that direction has something
-                            var n = FaceNormals[f];
-                            if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
+            for (var y = 0; y < ChunkSize; y++)
+            for (var z = 0; z < ChunkSize; z++)
+            {
+                if (!Occupied(x, y, z, chunk)) continue;
+                // TODO we could optimize the vertex buffer by storing one cube if ANY face is visible, and then
+                // only pushing the visible faces to the index buffer
+                for (var f = 0; f < 6; f++)
+                {
+                    // Use FaceNormals to check neighbors: Get the normal of the current face, and check if the
+                    // cell in that direction has something
+                    var n = FaceNormals[f];
+                    if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
 
-                            // We assume we will use all vertices and indices of this cube.
-                            totalVerts += meshData.VertCount;
-                            totalIndices += meshData.IndicesPerFace;
-                        }
-                    }
+                    // We assume we will use all vertices and indices of this cube.
+                    totalVerts += meshData.VertCount;
+                    totalIndices += meshData.IndicesPerFace;
+                }
+            }
 
             return new CountResult
             {
@@ -208,7 +212,8 @@ namespace World
             }
         }
 
-        static void ConstructMesh(in ChunkData chunk, in CountResult countResult, in MeshDataResult meshData, in Mesh.MeshDataArray meshDataArray)
+        static void ConstructMesh(in ChunkData chunk, in CountResult countResult, in MeshDataResult meshData,
+            in Mesh.MeshDataArray meshDataArray)
         {
             var data = meshDataArray[0];
             var dstVerts = data.GetVertexData<Vertex>();
@@ -219,38 +224,38 @@ namespace World
             // iCursor: next available index position
             int vCursor = 0, iCursor = 0;
             for (int x = 0; x < ChunkSize; x++)
-                for (int y = 0; y < ChunkSize; y++)
-                    for (int z = 0; z < ChunkSize; z++)
+            for (int y = 0; y < ChunkSize; y++)
+            for (int z = 0; z < ChunkSize; z++)
+            {
+                if (!Occupied(x, y, z, chunk)) continue;
+                float3 position = new(x, y, z);
+
+                for (int f = 0; f < 6; f++)
+                {
+                    int3 n = FaceNormals[f];
+
+                    // Like before, we skip if this face has neighbors
+                    if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
+
+                    // vBase: where this face's vertices start
+                    int vBase = vCursor;
+                    // copy full vert buffer once per emitted face. Wasteful, I know, but easy to implement
+                    for (int v = 0; v < meshData.VertCount; v++)
                     {
-                        if (!Occupied(x, y, z, chunk)) continue;
-                        float3 position = new(x, y, z);
-
-                        for (int f = 0; f < 6; f++)
+                        var uvOffset = GetUVOffset(chunk.Blocks.Get(x, y, z).Type);
+                        dstVerts[vCursor++] = new Vertex
                         {
-                            int3 n = FaceNormals[f];
-
-                            // Like before, we skip if this face has neighbors
-                            if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
-
-                            // vBase: where this face's vertices start
-                            int vBase = vCursor;
-                            // copy full vert buffer once per emitted face. Wasteful, I know, but easy to implement
-                            for (int v = 0; v < meshData.VertCount; v++)
-                            {
-                                var uvOffset = GetUVOffset(chunk.Blocks.Get(x, y, z).Type);
-                                dstVerts[vCursor++] = new Vertex
-                                {
-                                    Position = (float3)meshData.Positions[v] + position,
-                                    Normal = meshData.Normals[v],
-                                    UV = meshData.UVs[v] + uvOffset
-                                };
-                            }
-
-                            int startIndex = f * meshData.IndicesPerFace;
-                            for (int i = 0; i < meshData.IndicesPerFace; i++)
-                                dstIndices[iCursor++] = (uint)vBase + meshData.FaceIndexBlocks[startIndex + i];
-                        }
+                            Position = (float3)meshData.Positions[v] + position,
+                            Normal = meshData.Normals[v],
+                            UV = meshData.UVs[v] + uvOffset
+                        };
                     }
+
+                    int startIndex = f * meshData.IndicesPerFace;
+                    for (int i = 0; i < meshData.IndicesPerFace; i++)
+                        dstIndices[iCursor++] = (uint)vBase + meshData.FaceIndexBlocks[startIndex + i];
+                }
+            }
 
             data.subMeshCount = 1;
             data.SetSubMesh(0, new SubMeshDescriptor(0, countResult.TotalIndices)

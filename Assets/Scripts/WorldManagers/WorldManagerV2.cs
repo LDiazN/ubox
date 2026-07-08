@@ -18,22 +18,26 @@ namespace WorldManagers
 
         [Tooltip("How far away the player can see, measured in chunks. First axis is horizontal render " +
                  "distance, second axis is vertical render distance")]
-        [SerializeField] private Vector2 chunkRenderDistance = new(8, 2);
+        [SerializeField]
+        private Vector2 chunkRenderDistance = new(8, 2);
+
         public Vector2 ChunkRenderDistance => chunkRenderDistance;
 
-        [Tooltip("How many frames between updates")]
-        [SerializeField] private int updateRateInterval = 3;
+        [Tooltip("How many frames between updates")] [SerializeField]
+        private int updateRateInterval = 3;
+
         [SerializeField] private bool showGizmos = true;
 
         [Header("Procedural generation")]
         [Tooltip("Minimum height such that every block below this height is a solid block")]
         [Min(1)]
-        [SerializeField] private int minHeight = 1;
-        [Min(1)]
-        [Tooltip("Max height that a solid block can reach")]
-        [SerializeField] private int maxHeight = 16;
-        [Min(0)]
-        [SerializeField] private float noiseScale = 1;
+        [SerializeField]
+        private int minHeight = 1;
+
+        [Min(1)] [Tooltip("Max height that a solid block can reach")] [SerializeField]
+        private int maxHeight = 16;
+
+        [Min(0)] [SerializeField] private float noiseScale = 1;
 
         #endregion
 
@@ -112,29 +116,31 @@ namespace WorldManagers
 
             // 1. Make sure that all needed chunks are internally created and rendered
             var intRenderDistance = new int2(chunkRenderDistance);
-            var minChunk = playerChunk - chunkSize * new int3(intRenderDistance.x, intRenderDistance.y, intRenderDistance.x);
-            var maxChunk = playerChunk + chunkSize * new int3(intRenderDistance.x, intRenderDistance.y, intRenderDistance.x);
+            var minChunk = playerChunk -
+                           chunkSize * new int3(intRenderDistance.x, intRenderDistance.y, intRenderDistance.x);
+            var maxChunk = playerChunk +
+                           chunkSize * new int3(intRenderDistance.x, intRenderDistance.y, intRenderDistance.x);
 
             for (var x = minChunk.x; x < maxChunk.x; x += chunkSize)
-                for (var y = minChunk.y; y < maxChunk.y; y += chunkSize)
-                    for (var z = minChunk.z; z < maxChunk.z; z += chunkSize)
-                    {
-                        // Is this chunk internally created?
-                        if (!Map.GetChunk(x, y, z, out _))
-                        {
-                            PopulateChunk(x, y, z);
-                            continue;
-                        }
+            for (var y = minChunk.y; y < maxChunk.y; y += chunkSize)
+            for (var z = minChunk.z; z < maxChunk.z; z += chunkSize)
+            {
+                // Is this chunk internally created?
+                if (!Map.GetChunk(x, y, z, out _))
+                {
+                    PopulateChunk(x, y, z);
+                    continue;
+                }
 
-                        // Ignore if it's still being populated asynchronously
-                        if (InPending(x, y, z))
-                            continue;
+                // Ignore if it's still being populated asynchronously
+                if (InPending(x, y, z))
+                    continue;
 
-                        // Is this chunk rendered?
-                        var pos = new int3(x, y, z);
-                        if (!_loadedChunks.ContainsKey(pos))
-                            SpawnChunk(x, y, z);
-                    }
+                // Is this chunk rendered?
+                var pos = new int3(x, y, z);
+                if (!_loadedChunks.ContainsKey(pos))
+                    SpawnChunk(x, y, z);
+            }
 
             // 2. Unload all chunks that are too far to be visible
             foreach (var cp in _loadedChunks.Keys)
@@ -196,7 +202,8 @@ namespace WorldManagers
             Gizmos.color = Color.red;
             var chunkSize = ChunkRenderer.ChunkSize;
             foreach (var entry in Map.Map)
-                Gizmos.DrawWireCube(new float3(entry.Value.Position) + 0.5f * new float3(chunkSize), new float3(chunkSize));
+                Gizmos.DrawWireCube(new float3(entry.Value.Position) + 0.5f * new float3(chunkSize),
+                    new float3(chunkSize));
         }
 
         private void SpawnChunk(int x, int y, int z)
@@ -245,19 +252,19 @@ namespace WorldManagers
                 // We will use Simplex noise as height map
                 const int chunkSize = ChunkRenderer.ChunkSize;
                 for (var dx = 0; dx < chunkSize; dx++)
-                    for (var dy = 0; dy < chunkSize; dy++)
-                        for (var dz = 0; dz < chunkSize; dz++)
-                        {
-                            // Traverse Y reversed so you can know if the block of the current position is air
-                            var isSolid = IsSolid(dx, dy, dz);
-                            var topIsSolid = IsSolid(dx, dy + 1, dz);
-                            var blockType = BlockType.Empty;
+                for (var dy = 0; dy < chunkSize; dy++)
+                for (var dz = 0; dz < chunkSize; dz++)
+                {
+                    // Traverse Y reversed so you can know if the block of the current position is air
+                    var isSolid = IsSolid(dx, dy, dz);
+                    var topIsSolid = IsSolid(dx, dy + 1, dz);
+                    var blockType = BlockType.Empty;
 
-                            if (isSolid)
-                                blockType = topIsSolid ? BlockType.Dirt : BlockType.Grass;
+                    if (isSolid)
+                        blockType = topIsSolid ? BlockType.Dirt : BlockType.Grass;
 
-                            ChunkData.Blocks.Set(dx, dy, dz, new BlockData { Type = blockType });
-                        }
+                    ChunkData.Blocks.Set(dx, dy, dz, new BlockData { Type = blockType });
+                }
             }
 
             private bool IsSolid(int x, int y, int z)

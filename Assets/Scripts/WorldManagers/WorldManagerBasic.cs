@@ -9,13 +9,9 @@ namespace WorldManagers
         #region Inspector Properties
 
         [SerializeField] private Transform cubePrefab;
-        [Min(0)]
-        [SerializeField] private int width = 50;
-        [Min(0)]
-        [SerializeField] private int height = 50;
-        [Min(0)]
-        [SerializeField] private int depth = 50;
-
+        [Min(0)] [SerializeField] private int width = 50;
+        [Min(0)] [SerializeField] private int height = 50;
+        [Min(0)] [SerializeField] private int depth = 50;
 
         #endregion
 

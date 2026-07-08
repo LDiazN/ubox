@@ -76,6 +76,5 @@ namespace Managers
             chunk.MeshRenderer.enabled = active;
             chunk.enabled = active;
         }
-
     }
 }

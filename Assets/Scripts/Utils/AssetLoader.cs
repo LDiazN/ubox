@@ -36,6 +36,5 @@ namespace Utils
             return null;
 #endif
         }
-
     }
 }

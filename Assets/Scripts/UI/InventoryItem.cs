@@ -14,7 +14,6 @@ namespace UI
         [SerializeField] private Color inactiveColor;
         [SerializeField] private BlockType type;
 
-
         #endregion
 
         #region Internal State

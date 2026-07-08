@@ -15,7 +15,6 @@ namespace Managers
 
         public event Action<BlockType> OnPlayerBlockChanged;
 
-
         #endregion
 
         private void Awake()
@@ -29,8 +28,8 @@ namespace Managers
             Instance = this;
         }
 
-        public static void Pause(bool pauseActive) => Instance ?.OnPause?.Invoke(pauseActive);
+        public static void Pause(bool pauseActive) => Instance?.OnPause?.Invoke(pauseActive);
 
-        public static void ChangePlayerBlock(BlockType block) => Instance ?.OnPlayerBlockChanged?.Invoke(block);
+        public static void ChangePlayerBlock(BlockType block) => Instance?.OnPlayerBlockChanged?.Invoke(block);
     }
 }

@@ -13,16 +13,14 @@ namespace Player
     {
         #region Inspector Properties
 
-        [Tooltip("How far away can the player place blocks")]
-        [Min(0)]
-        [SerializeField] private float maxBlockPlaceDistance = 2;
+        [Tooltip("How far away can the player place blocks")] [Min(0)] [SerializeField]
+        private float maxBlockPlaceDistance = 2;
 
-        [Tooltip("A block without collider used for highlighting other blocks")]
-        [SerializeField] private GameObject highlightBlockPrefab;
+        [Tooltip("A block without collider used for highlighting other blocks")] [SerializeField]
+        private GameObject highlightBlockPrefab;
 
-        [Min(0)]
-        [Tooltip("Cooldown time between cube placements")]
-        [SerializeField] private float timeBetweenOperations = 0.1f;
+        [Min(0)] [Tooltip("Cooldown time between cube placements")] [SerializeField]
+        private float timeBetweenOperations = 0.1f;
 
         #endregion
 
@@ -67,12 +65,15 @@ namespace Player
             _input.Player.Block1.performed += OnBlock1;
             _input.Player.Block2.performed += OnBlock2;
         }
+
         private void OnDisable()
         {
             _input.Player.PlaceBlock.started -= OnPlaceBlock;
             _input.Player.PlaceBlock.canceled -= OnPlaceBlock;
             _input.Player.RemoveBlock.started -= OnRemoveBlock;
             _input.Player.RemoveBlock.canceled -= OnRemoveBlock;
+            _input.Player.Block1.performed -= OnBlock1;
+            _input.Player.Block2.performed -= OnBlock2;
             _input.Player.Disable();
         }
 
@@ -91,6 +92,7 @@ namespace Player
                 _highlightBlock.SetActive(false);
                 return;
             }
+
             _closest = GetClosest(_hitBuffer, _nHits);
 
             // Keep in mind that we hit the chunk itself, not just the block. We have to derive the block position
@@ -149,8 +151,7 @@ namespace Player
         private void OnBlock1(InputAction.CallbackContext obj)
         {
             var old = CurrentBlockType;
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-                CurrentBlockType = BlockType.Grass;
+            CurrentBlockType = BlockType.Grass;
 
             if (old != CurrentBlockType)
                 EventsChannel.ChangePlayerBlock(CurrentBlockType);
@@ -159,13 +160,11 @@ namespace Player
         private void OnBlock2(InputAction.CallbackContext obj)
         {
             var old = CurrentBlockType;
-            if (Input.GetKeyDown(KeyCode.Alpha2))
-                CurrentBlockType = BlockType.Dirt;
+            CurrentBlockType = BlockType.Dirt;
 
             if (old != CurrentBlockType)
                 EventsChannel.ChangePlayerBlock(CurrentBlockType);
         }
-
 
         private void PlaceHighlight(in RaycastHit hit)
         {
@@ -189,7 +188,8 @@ namespace Player
             inside += 0.5f * Vector3.one;
             var nextPosition = inside + hit.normal;
 
-            worldManager.SetBlock(new int3(math.floor((float3)nextPosition)), CurrentBlockType); // TODO support other block types
+            worldManager.SetBlock(new int3(math.floor((float3)nextPosition)),
+                CurrentBlockType); // TODO support other block types
         }
 
         private void RemoveBlock(in RaycastHit hit)
@@ -212,6 +212,7 @@ namespace Player
                 if (buffer[i].distance < closest.distance)
                     closest = buffer[i];
             }
+
             return closest;
         }
 

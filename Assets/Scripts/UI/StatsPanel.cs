@@ -43,6 +43,7 @@ namespace UI
             _bindings.Player.Enable();
             _bindings.Player.ShowStats.performed += OnShowStats;
         }
+
         private void OnDisable()
         {
             _bindings.Player.ShowStats.performed -= OnShowStats;
@@ -70,7 +71,7 @@ namespace UI
             var wm = WorldManagerV2.Instance;
 
             var loadedChunks = wm?.LoadedChunks ?? 0;
-            var createdChunks = wm?.CreatedChunks?? 0;
+            var createdChunks = wm?.CreatedChunks ?? 0;
             var chunkSize = ChunkRenderer.ChunkSize;
             var bytes = createdChunks * chunkSize * chunkSize * chunkSize;
             var memoryPressure = wm ? FormatBytes(bytes) : "Unknown";

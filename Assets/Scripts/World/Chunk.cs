@@ -60,7 +60,7 @@ namespace World
                 // Note that the blocks are 0-initialized, empty block is 0, so the entire chunk is empty
                 Blocks = new(
                     ChunkRenderer.ChunkSize, ChunkRenderer.ChunkSize, ChunkRenderer.ChunkSize, Allocator.Persistent
-                    ),
+                ),
                 Position = chunkCoords
             };
         }

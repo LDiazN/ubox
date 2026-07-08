@@ -10,16 +10,11 @@ public class FirstPersonMovement : MonoBehaviour
 {
     #region Inspector Properties
 
-    [Min(0)]
-    [SerializeField] private float movementSpeed = 5;
-    [Min(0)]
-    [SerializeField] private float cameraSpeed = 5;
-    [Min(0)]
-    [SerializeField] private float maxCameraRotation = 20;
-    [Min(0)]
-    [SerializeField] private float gravity = 9;
-    [Min(0)]
-    [SerializeField] private float jumpHeight = 1.1f;
+    [Min(0)] [SerializeField] private float movementSpeed = 5;
+    [Min(0)] [SerializeField] private float cameraSpeed = 5;
+    [Min(0)] [SerializeField] private float maxCameraRotation = 20;
+    [Min(0)] [SerializeField] private float gravity = 9;
+    [Min(0)] [SerializeField] private float jumpHeight = 1.1f;
 
     #endregion
 
@@ -68,7 +63,8 @@ public class FirstPersonMovement : MonoBehaviour
 
         // Camera and body look rotation
         transform.Rotate(new Vector3(0, _mouse.x, 0) * (Time.smoothDeltaTime * cameraSpeed));
-        _cameraRotationX = Mathf.Clamp(_cameraRotationX - _mouse.y * Time.smoothDeltaTime * cameraSpeed, -maxCameraRotation, maxCameraRotation);
+        _cameraRotationX = Mathf.Clamp(_cameraRotationX - _mouse.y * Time.smoothDeltaTime * cameraSpeed,
+            -maxCameraRotation, maxCameraRotation);
         if (_camera)
         {
             _camera.transform.localRotation = Quaternion.Euler(_cameraRotationX, 0, 0);
@@ -95,6 +91,7 @@ public class FirstPersonMovement : MonoBehaviour
         {
             _verticalVelocity -= gravity * Time.fixedDeltaTime;
         }
+
         _jumpRequested = false;
 
         var movement = (transform.right * _input.x + transform.forward * _input.y) * movementSpeed;
