@@ -1,7 +1,9 @@
 using System;
+using Settings;
 using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using World;
 using WorldManagers;
 
@@ -20,12 +22,14 @@ namespace UI
         private CanvasGroup _canvasGroup;
         private bool _visible;
         private string _original;
+        private InputBindings _bindings;
 
         #endregion
 
         private void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();
+            _bindings = new InputBindings();
         }
 
         private void Start()
@@ -34,15 +38,26 @@ namespace UI
             _original = content.text;
         }
 
+        private void OnEnable()
+        {
+            _bindings.Player.Enable();
+            _bindings.Player.ShowStats.performed += OnShowStats;
+        }
+        private void OnDisable()
+        {
+            _bindings.Player.ShowStats.performed -= OnShowStats;
+            _bindings.Player.Disable();
+        }
+
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Tab))
-            {
-                _visible = !_visible;
-                Show(_visible);
-            }
-
             UpdateStats();
+        }
+
+        private void OnShowStats(InputAction.CallbackContext obj)
+        {
+            _visible = !_visible;
+            Show(_visible);
         }
 
         private void Show(bool visible) => _canvasGroup.alpha = visible ? 1 : 0;

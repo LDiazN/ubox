@@ -1427,7 +1427,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7968741628807668271, guid: 814a924b8d17ebd4eb75b582b255b66b, type: 3}
       propertyPath: cameraSpeed
-      value: 400
+      value: 10
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

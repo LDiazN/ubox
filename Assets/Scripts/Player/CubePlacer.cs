@@ -64,14 +64,16 @@ namespace Player
             _input.Player.PlaceBlock.canceled += OnPlaceBlock;
             _input.Player.RemoveBlock.started += OnRemoveBlock;
             _input.Player.RemoveBlock.canceled += OnRemoveBlock;
+            _input.Player.Block1.performed += OnBlock1;
+            _input.Player.Block2.performed += OnBlock2;
         }
-
         private void OnDisable()
         {
             _input.Player.PlaceBlock.started -= OnPlaceBlock;
             _input.Player.PlaceBlock.canceled -= OnPlaceBlock;
             _input.Player.RemoveBlock.started -= OnRemoveBlock;
             _input.Player.RemoveBlock.canceled -= OnRemoveBlock;
+            _input.Player.Disable();
         }
 
         private void Update()
@@ -80,15 +82,6 @@ namespace Player
                 return;
 
             _timeSinceLastOpr += Time.deltaTime;
-
-            var old = CurrentBlockType;
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-                CurrentBlockType = BlockType.Grass;
-            else if (Input.GetKeyDown(KeyCode.Alpha2))
-                CurrentBlockType = BlockType.Dirt;
-
-            if (old != CurrentBlockType)
-                EventsChannel.ChangePlayerBlock(CurrentBlockType);
 
             // Update the closest block
             var ray = GetRay();
@@ -152,6 +145,27 @@ namespace Player
 
             _shouldRemove = true;
         }
+
+        private void OnBlock1(InputAction.CallbackContext obj)
+        {
+            var old = CurrentBlockType;
+            if (Input.GetKeyDown(KeyCode.Alpha1))
+                CurrentBlockType = BlockType.Grass;
+
+            if (old != CurrentBlockType)
+                EventsChannel.ChangePlayerBlock(CurrentBlockType);
+        }
+
+        private void OnBlock2(InputAction.CallbackContext obj)
+        {
+            var old = CurrentBlockType;
+            if (Input.GetKeyDown(KeyCode.Alpha2))
+                CurrentBlockType = BlockType.Dirt;
+
+            if (old != CurrentBlockType)
+                EventsChannel.ChangePlayerBlock(CurrentBlockType);
+        }
+
 
         private void PlaceHighlight(in RaycastHit hit)
         {

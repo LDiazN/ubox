@@ -131,6 +131,42 @@ namespace Settings
                     ""initialStateCheck"": false
                 },
                 {
+                    ""name"": ""Pause"",
+                    ""type"": ""Button"",
+                    ""id"": ""ec1b2a48-dfc2-4a4f-8e7b-ef90012f9797"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Block1"",
+                    ""type"": ""Button"",
+                    ""id"": ""1c8673bc-f9c0-41e8-9905-ebca9a21db02"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Block2"",
+                    ""type"": ""Button"",
+                    ""id"": ""b21f4235-2b6b-43ff-9e15-c300c336c16f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ShowStats"",
+                    ""type"": ""Button"",
+                    ""id"": ""867d55b4-5ea4-4a7b-8834-f3ce099c06ec"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
                     ""name"": ""Interact"",
                     ""type"": ""Button"",
                     ""id"": ""852140f2-7766-474d-8707-702459ba45f3"",
@@ -568,6 +604,94 @@ namespace Settings
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
                     ""action"": ""RemoveBlock"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0b5629a7-1100-4bc6-a34a-3c253f430837"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6dcf5221-e511-47d2-82d7-d636c2f1372b"",
+                    ""path"": ""<Gamepad>/start"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""308ec104-d178-4a45-a918-a9c57b7a68af"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Block1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a29cb4cf-2de3-42cf-a35d-bc95c20f9e80"",
+                    ""path"": ""<Gamepad>/leftShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""Block1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""50e0b584-1692-4216-8d4b-a7d9699f35b0"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Block2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1b34521d-c2db-48f7-9eba-9f792091faa1"",
+                    ""path"": ""<Gamepad>/rightShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""Block2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""771cedfc-75fe-4641-bcb2-8e91b2370978"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""ShowStats"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a24954b2-dd9e-4273-8f58-b054e6bfc606"",
+                    ""path"": ""<Gamepad>/select"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""ShowStats"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -1181,6 +1305,10 @@ namespace Settings
             m_Player_Look = m_Player.FindAction("Look", throwIfNotFound: true);
             m_Player_PlaceBlock = m_Player.FindAction("PlaceBlock", throwIfNotFound: true);
             m_Player_RemoveBlock = m_Player.FindAction("RemoveBlock", throwIfNotFound: true);
+            m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
+            m_Player_Block1 = m_Player.FindAction("Block1", throwIfNotFound: true);
+            m_Player_Block2 = m_Player.FindAction("Block2", throwIfNotFound: true);
+            m_Player_ShowStats = m_Player.FindAction("ShowStats", throwIfNotFound: true);
             m_Player_Interact = m_Player.FindAction("Interact", throwIfNotFound: true);
             m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
             m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
@@ -1284,6 +1412,10 @@ namespace Settings
         private readonly InputAction m_Player_Look;
         private readonly InputAction m_Player_PlaceBlock;
         private readonly InputAction m_Player_RemoveBlock;
+        private readonly InputAction m_Player_Pause;
+        private readonly InputAction m_Player_Block1;
+        private readonly InputAction m_Player_Block2;
+        private readonly InputAction m_Player_ShowStats;
         private readonly InputAction m_Player_Interact;
         private readonly InputAction m_Player_Crouch;
         private readonly InputAction m_Player_Jump;
@@ -1317,6 +1449,22 @@ namespace Settings
             /// Provides access to the underlying input action "Player/RemoveBlock".
             /// </summary>
             public InputAction @RemoveBlock => m_Wrapper.m_Player_RemoveBlock;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Pause".
+            /// </summary>
+            public InputAction @Pause => m_Wrapper.m_Player_Pause;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Block1".
+            /// </summary>
+            public InputAction @Block1 => m_Wrapper.m_Player_Block1;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Block2".
+            /// </summary>
+            public InputAction @Block2 => m_Wrapper.m_Player_Block2;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/ShowStats".
+            /// </summary>
+            public InputAction @ShowStats => m_Wrapper.m_Player_ShowStats;
             /// <summary>
             /// Provides access to the underlying input action "Player/Interact".
             /// </summary>
@@ -1379,6 +1527,18 @@ namespace Settings
                 @RemoveBlock.started += instance.OnRemoveBlock;
                 @RemoveBlock.performed += instance.OnRemoveBlock;
                 @RemoveBlock.canceled += instance.OnRemoveBlock;
+                @Pause.started += instance.OnPause;
+                @Pause.performed += instance.OnPause;
+                @Pause.canceled += instance.OnPause;
+                @Block1.started += instance.OnBlock1;
+                @Block1.performed += instance.OnBlock1;
+                @Block1.canceled += instance.OnBlock1;
+                @Block2.started += instance.OnBlock2;
+                @Block2.performed += instance.OnBlock2;
+                @Block2.canceled += instance.OnBlock2;
+                @ShowStats.started += instance.OnShowStats;
+                @ShowStats.performed += instance.OnShowStats;
+                @ShowStats.canceled += instance.OnShowStats;
                 @Interact.started += instance.OnInteract;
                 @Interact.performed += instance.OnInteract;
                 @Interact.canceled += instance.OnInteract;
@@ -1420,6 +1580,18 @@ namespace Settings
                 @RemoveBlock.started -= instance.OnRemoveBlock;
                 @RemoveBlock.performed -= instance.OnRemoveBlock;
                 @RemoveBlock.canceled -= instance.OnRemoveBlock;
+                @Pause.started -= instance.OnPause;
+                @Pause.performed -= instance.OnPause;
+                @Pause.canceled -= instance.OnPause;
+                @Block1.started -= instance.OnBlock1;
+                @Block1.performed -= instance.OnBlock1;
+                @Block1.canceled -= instance.OnBlock1;
+                @Block2.started -= instance.OnBlock2;
+                @Block2.performed -= instance.OnBlock2;
+                @Block2.canceled -= instance.OnBlock2;
+                @ShowStats.started -= instance.OnShowStats;
+                @ShowStats.performed -= instance.OnShowStats;
+                @ShowStats.canceled -= instance.OnShowStats;
                 @Interact.started -= instance.OnInteract;
                 @Interact.performed -= instance.OnInteract;
                 @Interact.canceled -= instance.OnInteract;
@@ -1766,6 +1938,34 @@ namespace Settings
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnRemoveBlock(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Pause" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnPause(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Block1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnBlock1(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Block2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnBlock2(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "ShowStats" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnShowStats(InputAction.CallbackContext context);
             /// <summary>
             /// Method invoked when associated input action "Interact" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
             /// </summary>

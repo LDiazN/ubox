@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
+using Settings;
 using Quaternion = UnityEngine.Quaternion;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
@@ -31,8 +33,26 @@ public class FirstPersonMovement : MonoBehaviour
     private float _cameraRotationX;
     private float _verticalVelocity;
     private bool _jumpRequested;
+    private InputBindings _bindings;
 
     #endregion
+
+    private void Awake()
+    {
+        _bindings = new InputBindings();
+    }
+
+    private void OnEnable()
+    {
+        _bindings.Player.Enable();
+        _bindings.Player.Jump.started += OnJump;
+    }
+
+    private void OnDisable()
+    {
+        _bindings.Player.Jump.started -= OnJump;
+        _bindings.Player.Disable();
+    }
 
     private void Start()
     {
@@ -42,15 +62,9 @@ public class FirstPersonMovement : MonoBehaviour
 
     void Update()
     {
-        _input.x = Input.GetAxis("Horizontal");
-        _input.y = Input.GetAxis("Vertical");
-        _mouse.x = Input.GetAxis("Mouse X");
-        _mouse.y = Input.GetAxis("Mouse Y");
-
-        if (Input.GetButtonDown("Jump"))
-        {
-            _jumpRequested = true;
-        }
+        // We need this every frame anyways so ReadValue is better than an event handler
+        _input = _bindings.Player.Move.ReadValue<Vector2>();
+        _mouse = _bindings.Player.Look.ReadValue<Vector2>();
 
         // Camera and body look rotation
         transform.Rotate(new Vector3(0, _mouse.x, 0) * (Time.smoothDeltaTime * cameraSpeed));
@@ -59,6 +73,11 @@ public class FirstPersonMovement : MonoBehaviour
         {
             _camera.transform.localRotation = Quaternion.Euler(_cameraRotationX, 0, 0);
         }
+    }
+
+    private void OnJump(InputAction.CallbackContext context)
+    {
+        _jumpRequested = true;
     }
 
     private void FixedUpdate()

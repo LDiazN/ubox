@@ -1,7 +1,8 @@
 using System;
 using Managers;
-using Unity.VisualScripting;
+using Settings;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class GameManager : MonoBehaviour
 {
@@ -10,6 +11,7 @@ public class GameManager : MonoBehaviour
     private static GameManager _instance;
     private bool _isPaused;
     public static bool IsPaused => _instance?._isPaused ?? false;
+    private InputBindings _bindings;
 
     #endregion
 
@@ -21,6 +23,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        _bindings = new InputBindings();
         _instance = this;
     }
 
@@ -29,10 +32,16 @@ public class GameManager : MonoBehaviour
         ShowCursor(false);
     }
 
-    private void Update()
+    private void OnEnable()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-            Pause();
+        _bindings.Player.Enable();
+        _bindings.Player.Pause.performed += Pause;
+    }
+
+    private void OnDisable()
+    {
+        _bindings.Player.Pause.performed -= Pause;
+        _bindings.Player.Disable();
     }
 
     private void OnDestroy()
@@ -40,8 +49,7 @@ public class GameManager : MonoBehaviour
         ShowCursor(true);
     }
 
-
-    private void Pause()
+    private void Pause(InputAction.CallbackContext _)
     {
         _isPaused = !_isPaused;
         EventsChannel.Pause(_isPaused);
