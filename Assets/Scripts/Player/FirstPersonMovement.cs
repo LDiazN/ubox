@@ -53,8 +53,8 @@ public class FirstPersonMovement : MonoBehaviour
         }
 
         // Camera and body look rotation
-        transform.Rotate(new Vector3(0, _mouse.x, 0) * (Time.deltaTime * cameraSpeed));
-        _cameraRotationX = Mathf.Clamp(_cameraRotationX - _mouse.y * Time.deltaTime * cameraSpeed, -maxCameraRotation, maxCameraRotation);
+        transform.Rotate(new Vector3(0, _mouse.x, 0) * (Time.smoothDeltaTime * cameraSpeed));
+        _cameraRotationX = Mathf.Clamp(_cameraRotationX - _mouse.y * Time.smoothDeltaTime * cameraSpeed, -maxCameraRotation, maxCameraRotation);
         if (_camera)
         {
             _camera.transform.localRotation = Quaternion.Euler(_cameraRotationX, 0, 0);
