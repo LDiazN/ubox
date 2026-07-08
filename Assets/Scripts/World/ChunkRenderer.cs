@@ -127,7 +127,7 @@ namespace World
             if (!InChunk(x, y, z))
                 return false;
 
-            var type = chunk.Blocks.Get(x, y, z).Type;
+            var type = chunk.Blocks.Get(x, y, z);
             return type != BlockType.Empty && type != BlockType.None;
         }
 
@@ -242,7 +242,7 @@ namespace World
                     // copy full vert buffer once per emitted face. Wasteful, I know, but easy to implement
                     for (int v = 0; v < meshData.VertCount; v++)
                     {
-                        var uvOffset = GetUVOffset(chunk.Blocks.Get(x, y, z).Type);
+                        var uvOffset = GetUVOffset(chunk.Blocks.Get(x, y, z));
                         dstVerts[vCursor++] = new Vertex
                         {
                             Position = (float3)meshData.Positions[v] + position,

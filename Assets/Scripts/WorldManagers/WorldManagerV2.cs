@@ -5,7 +5,6 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using Utils;
 using World;
 using PPlayer = Player.Player;
 using noise = Unity.Mathematics.noise;
@@ -220,7 +219,7 @@ namespace WorldManagers
         {
             if (!IsBusy(x, y, z))
             {
-                Map.SetBlock(x, y, z, new BlockData { Type = type });
+                Map.SetBlock(x, y, z, type);
                 _changed.Add(ChunkMap.WorldToChunkGrid(x, y, z));
             }
             else
@@ -263,7 +262,7 @@ namespace WorldManagers
                     if (isSolid)
                         blockType = topIsSolid ? BlockType.Dirt : BlockType.Grass;
 
-                    ChunkData.Blocks.Set(dx, dy, dz, new BlockData { Type = blockType });
+                    ChunkData.Blocks.Set(dx, dy, dz, blockType);
                 }
             }
 

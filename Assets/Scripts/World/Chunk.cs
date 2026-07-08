@@ -1,23 +1,16 @@
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Rendering;
 using Utils;
 
 namespace World
 {
     public struct ChunkData
     {
-        public Array3D<BlockData> Blocks;
+        public Array3D<BlockType> Blocks;
         public int3 Position;
 
         public void Dispose() => Blocks.Dispose();
-    }
-
-    public struct BlockData
-    {
-        public BlockType Type;
     }
 
     public class ChunkMap
@@ -36,21 +29,6 @@ namespace World
             return _map.TryGetValue(chunkPosition, out data);
         }
 
-        public bool GetBlock(int x, int y, int z, out BlockData data)
-        {
-            var found = GetChunk(x, y, z, out var chunkData);
-            if (!found)
-            {
-                data = default;
-                return false;
-            }
-
-            var localChunkCoords = ToChunkCoordinates(x, y, z);
-            data = chunkData.Blocks.Get(localChunkCoords.x, localChunkCoords.y, localChunkCoords.z);
-
-            return true;
-        }
-
         public void AddChunk(int x, int y, int z)
         {
             var chunkCoords = WorldToChunkGrid(x, y, z);
@@ -66,13 +44,13 @@ namespace World
         }
 
         // Returns whether a new chunk was created to set this block
-        public bool SetBlock(int x, int y, int z, BlockData data)
+        public bool SetBlock(int x, int y, int z, BlockType type)
         {
             var chunkExists = GetChunk(x, y, z, out var chunk);
             var coords = ToChunkCoordinates(x, y, z);
             if (chunkExists)
             {
-                chunk.Blocks.Set(coords.x, coords.y, coords.z, data);
+                chunk.Blocks.Set(coords.x, coords.y, coords.z, type);
                 return false;
             }
 
@@ -80,7 +58,7 @@ namespace World
             var found = GetChunk(x, y, z, out chunk);
             Debug.Assert(found, "Recently added chunk is not present");
 
-            chunk.Blocks.Set(coords.x, coords.y, coords.z, data);
+            chunk.Blocks.Set(coords.x, coords.y, coords.z, type);
 
             return true;
         }
