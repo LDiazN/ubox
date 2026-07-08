@@ -6,7 +6,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using World;
-using PPlayer = Player.Player;
+using Character;
 using noise = Unity.Mathematics.noise;
 
 namespace WorldManagers
@@ -106,10 +106,10 @@ namespace WorldManagers
             if (updateRateInterval > 0 && Time.frameCount % updateRateInterval != 0)
                 return;
 
-            if (!PPlayer.Instance)
+            if (!Player.Instance)
                 return;
 
-            var playerPosition = new int3(PPlayer.Instance.transform.position);
+            var playerPosition = new int3(Player.Instance.transform.position);
             var playerChunk = ChunkMap.WorldToChunkGrid(playerPosition.x, playerPosition.y, playerPosition.z);
             var chunkSize = ChunkMap.ChunkSize;
 

@@ -7,7 +7,7 @@ using Utils;
 using World;
 using WorldManagers;
 
-namespace Player
+namespace Character
 {
     public class CubePlacer : MonoBehaviour
     {

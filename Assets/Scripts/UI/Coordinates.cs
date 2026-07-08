@@ -1,3 +1,4 @@
+using Character;
 using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
@@ -22,13 +23,13 @@ namespace UI
 
         private void Update()
         {
-            if (!Player.Player.Instance)
+            if (!Player.Instance)
             {
                 SetText(0, 0, 0);
                 return;
             }
 
-            var pos = new int3(Player.Player.Instance.transform.position);
+            var pos = new int3(Player.Instance.transform.position);
             SetText(pos.x, pos.y, pos.z);
         }
 

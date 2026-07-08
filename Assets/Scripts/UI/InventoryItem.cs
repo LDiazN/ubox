@@ -1,3 +1,4 @@
+using Character;
 using Managers;
 using UnityEngine;
 using UnityEngine.UI;
@@ -29,8 +30,8 @@ namespace UI
 
         private void Start()
         {
-            if (Player.Player.Instance)
-                UpdateState(Player.Player.Instance.CubePlacer.CurrentBlockType);
+            if (Player.Instance)
+                UpdateState(Player.Instance.CubePlacer.CurrentBlockType);
         }
 
         private void OnEnable()
