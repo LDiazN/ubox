@@ -1,41 +1,44 @@
 using Managers;
-using TMPro;
 using UnityEngine;
 
 namespace UI
 {
     public class PauseMenuUI : MonoBehaviour
     {
-        #region Inspector Properties
+        #region Internal State
 
-        [SerializeField] private TextMeshProUGUI text;
+        private CanvasGroup _canvasGroup;
 
         #endregion
 
-        private void Reset()
+        private void Awake()
         {
-            text = GetComponentInChildren<TextMeshProUGUI>(true);
+            _canvasGroup = GetComponent<CanvasGroup>();
+        }
+
+        private void Start()
+        {
+            SetVisible(false);
         }
 
         private void OnEnable()
         {
             var events = EventsChannel.Instance;
             if (events)
-            {
-                events.OnPause += OnPause;
-            }
+                events.OnPause += SetVisible;
         }
 
         private void OnDisable()
         {
             var events = EventsChannel.Instance;
-            if (events) events.OnPause -= OnPause;
+            if (events) events.OnPause -= SetVisible;
         }
 
-        private void OnPause(bool pauseActive)
+        private void SetVisible(bool visible)
         {
-            Debug.Log($"Paused: {pauseActive}");
-            text.gameObject.SetActive(pauseActive);
+            _canvasGroup.alpha = visible ? 1 : 0;
+            _canvasGroup.interactable = visible;
+            // _canvasGroup.blocksRaycasts = visible;
         }
     }
 }

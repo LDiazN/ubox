@@ -11,7 +11,7 @@ public class FirstPersonMovement : MonoBehaviour
     #region Inspector Properties
 
     [Min(0)] [SerializeField] private float movementSpeed = 5;
-    [Min(0)] [SerializeField] private float cameraSpeed = 5;
+    [Min(0)] public float cameraSpeed = 5;
     [Min(0)] [SerializeField] private float maxCameraRotation = 20;
     [Min(0)] [SerializeField] private float gravity = 9;
     [Min(0)] [SerializeField] private float jumpHeight = 1.1f;
@@ -60,11 +60,15 @@ public class FirstPersonMovement : MonoBehaviour
         // We need this every frame anyways so ReadValue is better than an event handler
         _input = _bindings.Player.Move.ReadValue<Vector2>();
         _mouse = _bindings.Player.Look.ReadValue<Vector2>();
+        _mouse *= GameManager.IsPaused ? 0 : 1;
 
         // Camera and body look rotation
-        transform.Rotate(new Vector3(0, _mouse.x, 0) * (Time.smoothDeltaTime * cameraSpeed));
-        _cameraRotationX = Mathf.Clamp(_cameraRotationX - _mouse.y * Time.smoothDeltaTime * cameraSpeed,
-            -maxCameraRotation, maxCameraRotation);
+        transform.Rotate(new Vector3(0, _mouse.x, 0) * cameraSpeed);
+        _cameraRotationX = Mathf.Clamp(
+            _cameraRotationX - _mouse.y * cameraSpeed,
+            -maxCameraRotation,
+            maxCameraRotation
+            );
         if (_camera)
         {
             _camera.transform.localRotation = Quaternion.Euler(_cameraRotationX, 0, 0);
@@ -88,9 +92,7 @@ public class FirstPersonMovement : MonoBehaviour
             }
         }
         else
-        {
             _verticalVelocity -= gravity * Time.fixedDeltaTime;
-        }
 
         _jumpRequested = false;
 

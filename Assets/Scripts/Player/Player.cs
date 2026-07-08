@@ -9,6 +9,7 @@ namespace Player
         // This game is single player, so the player is singleton
         public static Player Instance { get; private set; }
         public CubePlacer CubePlacer { get; private set; }
+        public FirstPersonMovement FirstPersonMovement { get; private set; }
 
         #endregion
 
@@ -22,6 +23,7 @@ namespace Player
 
             Instance = this;
             CubePlacer = GetComponent<CubePlacer>();
+            FirstPersonMovement = GetComponent<FirstPersonMovement>();
         }
     }
 }
