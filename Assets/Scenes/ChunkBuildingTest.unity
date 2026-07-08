@@ -489,7 +489,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "Loaded chunks:  {0}\n\nGenerated chunks: {1}\n\tEstimated memory:  {2}\n\nRender
-    distance: {3}\n\nChunk Size: {4}\n\n\n"
+    distance: {3}\n\nChunk Size: {4}\n\nPending generation jobs: {5}\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

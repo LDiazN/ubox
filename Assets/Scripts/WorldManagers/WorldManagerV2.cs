@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Managers;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -75,7 +76,7 @@ namespace WorldManagers
             }
 
             Instance = this;
-            Map = new ChunkMap();
+            Map = new ChunkMap(Allocator.Persistent);
         }
 
         private void Update()

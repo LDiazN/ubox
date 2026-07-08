@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using Utils;
 using World;
@@ -49,7 +50,7 @@ namespace Managers
 
             chunk.transform.position = position;
             chunk.transform.rotation = rotation;
-            chunk.gameObject.SetActive(true);
+            SetChunkActive(chunk, true);
 
             pool.RemoveAt(pool.Count - 1);
 
@@ -62,9 +63,18 @@ namespace Managers
                 Destroy(chunk.gameObject);
 
             var pool = Instance._pool;
-            chunk.gameObject.SetActive(false);
+            SetChunkActive(chunk, false);
             chunk.Clear();
             pool.Add(chunk);
+        }
+
+        private static void SetChunkActive(ChunkRenderer chunk, bool active)
+        {
+            // We were doing chunk.SetActive(active) before but according to the profiler it was generating stutters.
+            // This seems to be less expensive and achieves the same result
+            chunk.Collider.enabled = active;
+            chunk.MeshRenderer.enabled = active;
+            chunk.enabled = active;
         }
 
     }

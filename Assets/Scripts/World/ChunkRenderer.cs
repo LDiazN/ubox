@@ -25,7 +25,9 @@ namespace World
         #region Internal State
 
         private MeshFilter _meshFilter;
-        private MeshCollider _collider;
+        public MeshCollider Collider { get; private set; }
+
+        public MeshRenderer MeshRenderer { get; private set; }
         // Cache mesh data from input mesh
         private MeshDataResult _meshData;
         // When a new change comes in, enqueue it until the currently-running coroutine is finished.
@@ -51,7 +53,9 @@ namespace World
         private void Awake()
         {
             _meshFilter = GetComponent<MeshFilter>();
-            _collider = GetComponent<MeshCollider>();
+            Collider = GetComponent<MeshCollider>();
+            MeshRenderer = GetComponent<MeshRenderer>();
+
         }
 
         private void OnDisable()
@@ -68,7 +72,7 @@ namespace World
         public void Clear()
         {
             _meshFilter.mesh = null;
-            _collider.sharedMesh = null;
+            Collider.sharedMesh = null;
         }
 
         public void OnChunkChanged(ChunkData chunk)
@@ -292,7 +296,7 @@ namespace World
             if (countResult.TotalVerts == 0)
             {
                 _meshFilter.mesh = null;
-                _collider.sharedMesh = null;
+                Collider.sharedMesh = null;
                 yield break;
             }
 
@@ -341,7 +345,7 @@ namespace World
                 yield return null;
 
             _meshFilter.mesh = mesh;
-            _collider.sharedMesh = mesh;
+            Collider.sharedMesh = mesh;
         }
 
         struct MeshDataResult

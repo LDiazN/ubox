@@ -22,9 +22,13 @@ namespace World
 
     public class ChunkMap
     {
-        Dictionary<int3, ChunkData> _map = new();
-        public Dictionary<int3, ChunkData> Map => _map;
+        NativeHashMap<int3, ChunkData> _map;
+        public NativeHashMap<int3, ChunkData> Map => _map;
 
+        public ChunkMap(Allocator allocator)
+        {
+            _map = new NativeHashMap<int3, ChunkData>(32768, allocator); // 2^15
+        }
 
         public bool GetChunk(int x, int y, int z, out ChunkData data)
         {
@@ -32,7 +36,7 @@ namespace World
             return _map.TryGetValue(chunkPosition, out data);
         }
 
-        public bool GetBlockData(int x, int y, int z, out BlockData data)
+        public bool GetBlock(int x, int y, int z, out BlockData data)
         {
             var found = GetChunk(x, y, z, out var chunkData);
             if (!found)
@@ -84,8 +88,10 @@ namespace World
 
         public void Dispose()
         {
-            foreach (var entry in _map.Values)
-                entry.Dispose();
+            foreach (var entry in _map)
+                entry.Value.Dispose();
+
+            _map.Dispose();
         }
 
 
@@ -109,8 +115,6 @@ namespace World
                    y % ChunkRenderer.ChunkSize == 0 &&
                    z % ChunkRenderer.ChunkSize == 0;
         }
-
-        public static bool IsChunkCoords(int3 pos) => IsChunkCoords(pos.x, pos.y, pos.z);
 
         // Returns a position inside a chunk, from 0 to ChunkSize-1
         public static int3 ToChunkCoordinates(int x, int y, int z)
