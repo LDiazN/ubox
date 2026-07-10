@@ -5,53 +5,49 @@ using Utils;
 
 namespace World
 {
-    public struct ChunkData
+    public struct ChunkTypes
     {
-        public Array3D<BlockType> Blocks;
-        public int3 Position;
-
-        public void Dispose() => Blocks.Dispose();
+        public Array3D<CubeType> Types;
     }
 
     public class ChunkMap
     {
         public const int ChunkSize = 16;
-        NativeHashMap<int3, ChunkData> _map;
-        public NativeHashMap<int3, ChunkData> Map => _map;
+        NativeHashMap<int3, ChunkTypes> _typeMap;
+        public NativeHashMap<int3, ChunkTypes> TypeMap => _typeMap;
 
         public ChunkMap(Allocator allocator)
         {
-            _map = new NativeHashMap<int3, ChunkData>(32768, allocator); // 2^15
+            _typeMap = new NativeHashMap<int3, ChunkTypes>(32768, allocator); // 2^15
         }
 
-        public bool GetChunk(int x, int y, int z, out ChunkData data)
+        public bool GetChunk(int x, int y, int z, out ChunkTypes types)
         {
             var chunkPosition = WorldToChunkGrid(x, y, z);
-            return _map.TryGetValue(chunkPosition, out data);
+            return _typeMap.TryGetValue(chunkPosition, out types);
         }
 
         public void AddChunk(int x, int y, int z)
         {
             var chunkCoords = WorldToChunkGrid(x, y, z);
-            Debug.Assert(!_map.ContainsKey(chunkCoords), "Replacing existent chunk. Do you really want to do this?");
-            _map[chunkCoords] = new ChunkData
+            Debug.Assert(!_typeMap.ContainsKey(chunkCoords), "Replacing existent chunk. Do you really want to do this?");
+            _typeMap[chunkCoords] = new ChunkTypes
             {
-                // Note that the blocks are 0-initialized, empty block is 0, so the entire chunk is empty
-                Blocks = new(
+                // Note that the blocks are 0-initialized, empty block is 0, so the entire chunk starts empty
+                Types = new(
                     ChunkSize, ChunkSize, ChunkSize, Allocator.Persistent
                 ),
-                Position = chunkCoords
             };
         }
 
         // Returns whether a new chunk was created to set this block
-        public bool SetBlock(int x, int y, int z, BlockType type)
+        public bool SetCube(int x, int y, int z, CubeType type)
         {
             var chunkExists = GetChunk(x, y, z, out var chunk);
             var coords = ToChunkCoordinates(x, y, z);
             if (chunkExists)
             {
-                chunk.Blocks.Set(coords.x, coords.y, coords.z, type);
+                chunk.Types.Set(coords.x, coords.y, coords.z, type);
                 return false;
             }
 
@@ -59,7 +55,7 @@ namespace World
             var found = GetChunk(x, y, z, out chunk);
             Debug.Assert(found, "Recently added chunk is not present");
 
-            chunk.Blocks.Set(coords.x, coords.y, coords.z, type);
+            chunk.Types.Set(coords.x, coords.y, coords.z, type);
 
             return true;
         }
@@ -67,10 +63,10 @@ namespace World
 
         public void Dispose()
         {
-            foreach (var entry in _map)
-                entry.Value.Dispose();
+            foreach (var entry in _typeMap)
+                entry.Value.Types.Dispose();
 
-            _map.Dispose();
+            _typeMap.Dispose();
         }
 
 
@@ -112,7 +108,7 @@ namespace World
         }
     }
 
-    public enum BlockType : byte
+    public enum CubeType : byte
     {
         Empty = 0,
         Grass,

@@ -13,7 +13,7 @@ namespace UI
 
         [SerializeField] private Color activeColor;
         [SerializeField] private Color inactiveColor;
-        [SerializeField] private BlockType type;
+        [SerializeField] private CubeType type;
 
         #endregion
 
@@ -31,7 +31,7 @@ namespace UI
         private void Start()
         {
             if (Player.Instance)
-                UpdateState(Player.Instance.CubePlacer.CurrentBlockType);
+                UpdateState(Player.Instance.CubePlacer.CurrentCubeType);
         }
 
         private void OnEnable()
@@ -53,6 +53,6 @@ namespace UI
         }
 
 
-        private void UpdateState(BlockType newType) => _image.color = newType == type ? activeColor : inactiveColor;
+        private void UpdateState(CubeType newType) => _image.color = newType == type ? activeColor : inactiveColor;
     }
 }

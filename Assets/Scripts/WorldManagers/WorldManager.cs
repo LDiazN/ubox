@@ -62,11 +62,11 @@ namespace WorldManagers
         // Sometimes someone might try to modify a chunk while the chunk is being rendered.
         // To avoid race conditions with chunk data, we save the request in this queue and apply
         // it when the chunk renderer is finished
-        private readonly List<(int3, BlockType)> _changeList = new();
+        private readonly List<(int3, CubeType)> _changeList = new();
 
         public int LoadedChunks => _loadedChunks.Count;
 
-        public int CreatedChunks => Map.Map.Count;
+        public int CreatedChunks => Map.TypeMap.Count;
 
         #endregion
 
@@ -173,7 +173,7 @@ namespace WorldManagers
                 Debug.Assert(found, "Trying to get data from existent chunk");
                 var isPresent = _loadedChunks.TryGetValue(item, out var chunk);
                 if (isPresent)
-                    chunk.OnChunkChanged(data);
+                    chunk.OnChunkChanged(data, item);
             }
 
             _changed.Clear();
@@ -190,6 +190,9 @@ namespace WorldManagers
 
         private void OnDestroy()
         {
+            foreach(var (_, job) in _pendingJobs)
+                job.Complete();
+
             Map.Dispose();
         }
 
@@ -200,8 +203,8 @@ namespace WorldManagers
 
             Gizmos.color = Color.red;
             var chunkSize = ChunkMap.ChunkSize;
-            foreach (var entry in Map.Map)
-                Gizmos.DrawWireCube(new float3(entry.Value.Position) + 0.5f * new float3(chunkSize),
+            foreach (var entry in Map.TypeMap)
+                Gizmos.DrawWireCube(new float3(entry.Key) + 0.5f * new float3(chunkSize),
                     new float3(chunkSize));
         }
 
@@ -215,18 +218,18 @@ namespace WorldManagers
             _changed.Add(new(x, y, z));
         }
 
-        public void SetBlock(int x, int y, int z, BlockType type)
+        public void SetBlock(int x, int y, int z, CubeType type)
         {
             if (!IsBusy(x, y, z))
             {
-                Map.SetBlock(x, y, z, type);
+                Map.SetCube(x, y, z, type);
                 _changed.Add(ChunkMap.WorldToChunkGrid(x, y, z));
             }
             else
                 _changeList.Add((new int3(x, y, z), type));
         }
 
-        public void SetBlock(int3 pos, BlockType type) => SetBlock(pos.x, pos.y, pos.z, type);
+        public void SetBlock(int3 pos, CubeType type) => SetBlock(pos.x, pos.y, pos.z, type);
 
         private bool IsBusy(int x, int y, int z)
         {
@@ -244,7 +247,7 @@ namespace WorldManagers
             public int X, Y, Z;
             public int MaxHeight, MinHeight;
             public float NoiseScale;
-            public ChunkData ChunkData;
+            public ChunkTypes ChunkTypes;
 
             public void Execute()
             {
@@ -257,12 +260,12 @@ namespace WorldManagers
                     // Traverse Y reversed so you can know if the block of the current position is air
                     var isSolid = IsSolid(dx, dy, dz);
                     var topIsSolid = IsSolid(dx, dy + 1, dz);
-                    var blockType = BlockType.Empty;
+                    var blockType = CubeType.Empty;
 
                     if (isSolid)
-                        blockType = topIsSolid ? BlockType.Dirt : BlockType.Grass;
+                        blockType = topIsSolid ? CubeType.Dirt : CubeType.Grass;
 
-                    ChunkData.Blocks.Set(dx, dy, dz, blockType);
+                    ChunkTypes.Types.Set(dx, dy, dz, blockType);
                 }
             }
 
@@ -297,7 +300,7 @@ namespace WorldManagers
                 MinHeight = minHeight,
                 MaxHeight = maxHeight,
                 NoiseScale = noiseScale,
-                ChunkData = data
+                ChunkTypes = data
             };
             var handle = populateJob.Schedule();
             var chunkPos = new int3(x, y, z);

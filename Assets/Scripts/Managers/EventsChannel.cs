@@ -13,7 +13,7 @@ namespace Managers
         // Arg: whether pause is active or not
         public event Action<bool> OnPause;
 
-        public event Action<BlockType> OnPlayerBlockChanged;
+        public event Action<CubeType> OnPlayerBlockChanged;
 
         #endregion
 
@@ -30,6 +30,6 @@ namespace Managers
 
         public static void Pause(bool pauseActive) => Instance?.OnPause?.Invoke(pauseActive);
 
-        public static void ChangePlayerBlock(BlockType block) => Instance?.OnPlayerBlockChanged?.Invoke(block);
+        public static void ChangePlayerBlock(CubeType cube) => Instance?.OnPlayerBlockChanged?.Invoke(cube);
     }
 }

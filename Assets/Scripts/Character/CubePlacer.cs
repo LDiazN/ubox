@@ -32,7 +32,7 @@ namespace Character
         private RaycastHit _closest;
         private GameObject _highlightBlock;
         private float _timeSinceLastOpr;
-        public BlockType CurrentBlockType { get; private set; }
+        public CubeType CurrentCubeType { get; private set; }
         private InputBindings _input;
         private bool _shouldPlace;
         private bool _shouldRemove;
@@ -51,7 +51,7 @@ namespace Character
             _hitBuffer = new RaycastHit[10];
             _highlightBlock = Instantiate(highlightBlockPrefab, transform.position, quaternion.identity);
             _highlightBlock.SetActive(false);
-            CurrentBlockType = BlockType.Grass;
+            CurrentCubeType = CubeType.Grass;
             _input = new InputBindings();
         }
 
@@ -150,20 +150,20 @@ namespace Character
 
         private void OnBlock1(InputAction.CallbackContext obj)
         {
-            var old = CurrentBlockType;
-            CurrentBlockType = BlockType.Grass;
+            var old = CurrentCubeType;
+            CurrentCubeType = CubeType.Grass;
 
-            if (old != CurrentBlockType)
-                EventsChannel.ChangePlayerBlock(CurrentBlockType);
+            if (old != CurrentCubeType)
+                EventsChannel.ChangePlayerBlock(CurrentCubeType);
         }
 
         private void OnBlock2(InputAction.CallbackContext obj)
         {
-            var old = CurrentBlockType;
-            CurrentBlockType = BlockType.Dirt;
+            var old = CurrentCubeType;
+            CurrentCubeType = CubeType.Dirt;
 
-            if (old != CurrentBlockType)
-                EventsChannel.ChangePlayerBlock(CurrentBlockType);
+            if (old != CurrentCubeType)
+                EventsChannel.ChangePlayerBlock(CurrentCubeType);
         }
 
         private void PlaceHighlight(in RaycastHit hit)
@@ -189,7 +189,7 @@ namespace Character
             var nextPosition = inside + hit.normal;
 
             worldManager.SetBlock(new int3(math.floor((float3)nextPosition)),
-                CurrentBlockType); // TODO support other block types
+                CurrentCubeType); // TODO support other block types
         }
 
         private void RemoveBlock(in RaycastHit hit)
@@ -201,7 +201,7 @@ namespace Character
             var inside = hit.point;
             var toHit = hit.point - _camera.transform.position;
             inside += 0.1f * toHit.normalized;
-            worldManager.SetBlock(new int3(math.floor((float3)inside)), BlockType.Empty);
+            worldManager.SetBlock(new int3(math.floor((float3)inside)), CubeType.Empty);
         }
 
         private RaycastHit GetClosest(RaycastHit[] buffer, int nElements)

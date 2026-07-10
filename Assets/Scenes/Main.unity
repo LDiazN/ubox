@@ -181,16 +181,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '<color=lightblue>Left</color> mouse to put block
-
-    <color=#fc97a2>Right
-    </color>mouse to remove block
-
-    Use <color=green>numbers</color> to change
-    block
-
-
-'
+  m_text: "<color=lightblue>Left</color> mouse to put block\n<color=#fc97a2>Right
+    </color>mouse to remove block\nUse <color=green>numbers</color> to change block\nSpace
+    to Jump \nTab for stats\n\n\n\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1278,7 +1271,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1248817512635354880, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}
       propertyPath: m_Name
-      value: WorldManagerv2
+      value: WorldManager
       objectReference: {fileID: 0}
     - target: {fileID: 6540517506149634195, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}
       propertyPath: noiseScale
@@ -1290,6 +1283,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6540517506149634195, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}
       propertyPath: chunkRenderDistance
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6540517506149634195, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}
+      propertyPath: chunkRenderDistance.x
       value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 6540517506149634195, guid: 47d1aa7e44ff8db4ab8855005c7d1a1a, type: 3}

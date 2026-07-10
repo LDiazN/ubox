@@ -781,7 +781,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4961515818384909522, guid: 814a924b8d17ebd4eb75b582b255b66b, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 4961515818384909522, guid: 814a924b8d17ebd4eb75b582b255b66b, type: 3}
       propertyPath: m_LocalPosition.y
@@ -789,7 +789,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4961515818384909522, guid: 814a924b8d17ebd4eb75b582b255b66b, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -3.5
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 4961515818384909522, guid: 814a924b8d17ebd4eb75b582b255b66b, type: 3}
       propertyPath: m_LocalRotation.w
@@ -936,6 +936,14 @@ PrefabInstance:
     - target: {fileID: 2505239217895316408, guid: e5c4e3ea13620cc4da42d4fb2da9ff69, type: 3}
       propertyPath: m_Name
       value: WorldManagerBasic
+      objectReference: {fileID: 0}
+    - target: {fileID: 3873427405930445423, guid: e5c4e3ea13620cc4da42d4fb2da9ff69, type: 3}
+      propertyPath: width
+      value: 64
+      objectReference: {fileID: 0}
+    - target: {fileID: 3873427405930445423, guid: e5c4e3ea13620cc4da42d4fb2da9ff69, type: 3}
+      propertyPath: height
+      value: 64
       objectReference: {fileID: 0}
     - target: {fileID: 5366919762337787079, guid: e5c4e3ea13620cc4da42d4fb2da9ff69, type: 3}
       propertyPath: m_LocalPosition.x

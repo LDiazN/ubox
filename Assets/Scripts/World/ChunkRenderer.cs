@@ -29,7 +29,7 @@ namespace World
         private MeshDataResult _meshData;
 
         // When a new change comes in, enqueue it until the currently-running coroutine is finished.
-        private readonly Queue<ChunkData> _changes = new();
+        private readonly Queue<ChunkTypes> _changes = new();
         public bool IsBuilding { get; private set; }
 
         #endregion
@@ -73,12 +73,11 @@ namespace World
             Collider.sharedMesh = null;
         }
 
-        public void OnChunkChanged(ChunkData chunk)
+        public void OnChunkChanged(ChunkTypes chunk, int3 chunkCoords)
         {
             if (!gameObject.activeSelf || !enabled)
                 return;
 
-            var chunkCoords = chunk.Position;
             var currentCoords = new int3((int)transform.position.x, (int)transform.position.y,
                 (int)transform.position.z);
 
@@ -88,9 +87,7 @@ namespace World
             _changes.Enqueue(chunk);
 
             if (!IsBuilding)
-            {
                 StartCoroutine(ProcessQueue());
-            }
         }
 
         // This additional coroutine saves us from adding an update method
@@ -121,13 +118,13 @@ namespace World
         }
 
         // Whether this cell in the chunk is occupied: There's something other than air or emptyness here
-        static bool Occupied(int x, int y, int z, in ChunkData chunk)
+        static bool IsSolid(int x, int y, int z, in ChunkTypes chunk)
         {
             if (!InChunk(x, y, z))
                 return false;
 
-            var type = chunk.Blocks.Get(x, y, z);
-            return type != BlockType.Empty && type != BlockType.None;
+            var type = chunk.Types.Get(x, y, z);
+            return type != CubeType.Empty && type != CubeType.None;
         }
 
         struct CountResult
@@ -139,7 +136,7 @@ namespace World
         [BurstCompile]
         struct CountVertsJob : IJob
         {
-            [ReadOnly] public ChunkData Chunk;
+            [ReadOnly] public ChunkTypes Chunk;
             [ReadOnly] public MeshDataResult MeshData;
             public NativeReference<CountResult> Result;
 
@@ -149,7 +146,7 @@ namespace World
             }
         }
 
-        private static CountResult CountVerts(in ChunkData chunk, in MeshDataResult meshData)
+        private static CountResult CountVerts(in ChunkTypes chunk, in MeshDataResult meshData)
         {
             // Vertex buffer layout:
             // c = cube, f = face
@@ -174,7 +171,7 @@ namespace World
             for (var y = 0; y < ChunkMap.ChunkSize; y++)
             for (var z = 0; z < ChunkMap.ChunkSize; z++)
             {
-                if (!Occupied(x, y, z, chunk)) continue;
+                if (!IsSolid(x, y, z, chunk)) continue;
                 // TODO we could optimize the vertex buffer by storing one cube if ANY face is visible, and then
                 // only pushing the visible faces to the index buffer
                 for (var f = 0; f < 6; f++)
@@ -182,7 +179,7 @@ namespace World
                     // Use FaceNormals to check neighbors: Get the normal of the current face, and check if the
                     // cell in that direction has something
                     var n = FaceNormals[f];
-                    if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
+                    if (IsSolid(x + n.x, y + n.y, z + n.z, chunk)) continue;
 
                     // We assume we will use all vertices and indices of this cube.
                     totalVerts += meshData.VertCount;
@@ -200,7 +197,7 @@ namespace World
         [BurstCompile]
         private struct ConstructMeshJob : IJob
         {
-            [ReadOnly] public ChunkData Chunk;
+            [ReadOnly] public ChunkTypes Chunk;
             [ReadOnly] public CountResult CountResult;
             [ReadOnly] public MeshDataResult MeshData;
             public Mesh.MeshDataArray MeshDataArray;
@@ -211,7 +208,7 @@ namespace World
             }
         }
 
-        static void ConstructMesh(in ChunkData chunk, in CountResult countResult, in MeshDataResult meshData,
+        static void ConstructMesh(in ChunkTypes chunk, in CountResult countResult, in MeshDataResult meshData,
             in Mesh.MeshDataArray meshDataArray)
         {
             var data = meshDataArray[0];
@@ -226,7 +223,7 @@ namespace World
             for (int y = 0; y < ChunkMap.ChunkSize; y++)
             for (int z = 0; z < ChunkMap.ChunkSize; z++)
             {
-                if (!Occupied(x, y, z, chunk)) continue;
+                if (!IsSolid(x, y, z, chunk)) continue;
                 float3 position = new(x, y, z);
 
                 for (int f = 0; f < 6; f++)
@@ -234,14 +231,14 @@ namespace World
                     int3 n = FaceNormals[f];
 
                     // Like before, we skip if this face has neighbors
-                    if (Occupied(x + n.x, y + n.y, z + n.z, chunk)) continue;
+                    if (IsSolid(x + n.x, y + n.y, z + n.z, chunk)) continue;
 
                     // vBase: where this face's vertices start
                     int vBase = vCursor;
                     // copy full vert buffer once per emitted face. Wasteful, I know, but easy to implement
                     for (int v = 0; v < meshData.VertCount; v++)
                     {
-                        var uvOffset = GetUVOffset(chunk.Blocks.Get(x, y, z));
+                        var uvOffset = GetUVOffset(chunk.Types.Get(x, y, z));
                         dstVerts[vCursor++] = new Vertex
                         {
                             Position = (float3)meshData.Positions[v] + position,
@@ -265,7 +262,7 @@ namespace World
             }, MeshUpdateFlags.DontRecalculateBounds);
         }
 
-        private static Vector2 GetUVOffset(BlockType type)
+        private static Vector2 GetUVOffset(CubeType type)
         {
             // Note that this only works bc the atlas has two textures, we have to
             // make this function smarter for the general case of N textures.
@@ -274,7 +271,7 @@ namespace World
         }
 
 
-        IEnumerator BuildChunk(ChunkData chunk)
+        IEnumerator BuildChunk(ChunkTypes chunk)
         {
             InitMeshData();
             var countJob = new CountVertsJob
@@ -332,30 +329,34 @@ namespace World
 
             constructHandle.Complete();
 
+            // The "DontRecalculateBounds" flag looks odd before mesh.RecalculateBounds(), but it prevents a weird
+            // graphics bug where closer chunks don't get rendered
             var mesh = new Mesh { name = "ChunkMesh" };
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh,
                 MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
             mesh.RecalculateBounds();
 
             // After measuring this thing in the profiler, I found out that the physics mesh baking was
-            // generating stuttering. Chunks are usually spawned far away so it's safe to bake the mesh
-            // off the render thread
+            // generating stuttering
             var meshEntityId = mesh.GetEntityId();
             var bakeTask = System.Threading.Tasks.Task.Run(() => Physics.BakeMesh(meshEntityId, false));
             while (!bakeTask.IsCompleted)
                 yield return null;
 
-            _meshFilter.mesh = mesh;
+            // Destroy old mesh
+            var old = _meshFilter.sharedMesh;
+            if (old) Destroy(old);
+            _meshFilter.sharedMesh = mesh;
             Collider.sharedMesh = mesh;
         }
 
         struct MeshDataResult
         {
             public NativeArray<Vector3> Positions;
-            public int VertCount;
             public NativeArray<Vector3> Normals;
             public NativeArray<Vector2> UVs;
             public NativeArray<uint> FaceIndexBlocks;
+            public int VertCount;
             public int IndicesPerFace;
 
             public void Dispose()
