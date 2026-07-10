@@ -1137,6 +1137,10 @@ PrefabInstance:
       propertyPath: cameraSpeed
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: 7968741628807668271, guid: 814a924b8d17ebd4eb75b582b255b66b, type: 3}
+      propertyPath: maxCameraRotation
+      value: 85
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
