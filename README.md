@@ -1,9 +1,21 @@
-# ubox
+# Ubox
+<img width="1919" height="1079" alt="image4" src="https://github.com/user-attachments/assets/6e5aaa86-032b-49b6-8e58-6d79c485d247" />
 
-Ubox es un clon de Minecraft muy simple que busca reproducir las características básicas del juego: Mundo procedural infinito y construcción por cubos. Esta simple premisa oculta un desafío significativo: el rendimiento
 
-La solución propuesta en este proyecto consigue renderizar aproximadamente 6.291.456 cubos al mismo tiempo con un framerate alrededor de 200 FPS en una build. Conseguimos este desempeño generando una malla por cada bloque. Un bloque es una sección de 16x16x16 cubos. Para cada bloque se genera una malla en tiempo de ejecución que representa los bloques en ese segmento. 
+Ubox is a minecraft-like demo game that shows how to render an infinite voxel world with good performance.
+It's made in Unity and achieves nearly 300 FPS on my machine in a world of 256 * 256 * 32 = **2 097 152** 
+cubes. 
 
-La generación de la malla en sí misma es bastante costosa: Tiene que representar 4096 objetos en uno solo.  También lo es la generación procedural de un mundo infinito que se genera continuamente. 
+The world is generated procedurally using a simple noise-sampling algorithm to generate a height map, it's 
+infinite in all directions.
 
-Para reducir el impacto en los fotogramas por segundo, este trabajo se ejecuta en otros hilos y se evita bloquear el hilo principal del motor. Para esto se recurre a las herramientas de paralelismo de Unity: El sistema de trabajos, estructuras de datos nativas y el profiler.
+The secret for the good performance is a combination of: 
+
+- Chunking blocks of 16x16x16 cubes into a single game object, and dynamically generating the mesh (and collision mesh) on the fly
+- Heavily leveraging parallelism to optimize unrelated computations
+- Offload as much work possible out of the main thread to avoid stutters
+- Using the right internal representation for world data
+
+ The remainder of this readme is a detailed explanation about how this project was done.
+
+
