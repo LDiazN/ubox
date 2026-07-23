@@ -73,7 +73,7 @@ This made me think that maybe this wasn't the proper approach for this problem.
 I went back to my basic world with 1 game object per cube and fired up the **profiler**. I wanted to have an informed perspective of what 
 was slowing down my game. It was clearly the shear amount of cubes but I wanted to know exactly what about them was generating the 
 problem. 
-
+a
 <img width="1634" height="911" alt="image6" src="https://github.com/user-attachments/assets/10c1f595-fd0b-4efd-810c-475aacae69f2" /> 
 
 1. `Gfx.WaitForGfxCommandsFromMainThread`: This is the key part, it tells us that the render thread is waiting for rendering instructions. It wastes a lot of time in this state.
