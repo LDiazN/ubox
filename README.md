@@ -70,9 +70,23 @@ This made me think that maybe this wasn't the proper approach for this problem.
 
 ### Profiling 
 
-I went back to my basic world with 1 game object per cube and fired up the profiler. I wanted to have an informed perspective of what 
+I went back to my basic world with 1 game object per cube and fired up the **profiler**. I wanted to have an informed perspective of what 
 was slowing down my game. It was clearly the shear amount of cubes but I wanted to know exactly what about them was generating the 
 problem. 
+
+<img width="1634" height="911" alt="image6" src="https://github.com/user-attachments/assets/10c1f595-fd0b-4efd-810c-475aacae69f2" /> 
+
+1. `Gfx.WaitForGfxCommandsFromMainThread`: This is the key part, it tells us that the render thread is waiting for rendering instructions. It wastes a lot of time in this state.
+2. Tehn we can see that every worker thread is doing some processing related to rendering. This is CPU work that needs to be done before sending GPU commands.
+3. `WaitForJobGroupID` means that the main thread is waiting for work that it's being executed in worker threads.
+
+From this profiling we reach the following conclusion: **Our program is CPU-bound**, not GPU-boud. Our bad framerate derives from the CPU not sending
+data to the GPU fast enough, not due to the GPU having too much work. This is for sure due to the high game object count we have at any moment, the objects themselves are already quite simple.
+
+So now our problem is reduced to: **How can we reduce the game object count in the game to reduce CPU pressure?**
+
+## Solution
+
 
 
 
