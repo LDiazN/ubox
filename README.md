@@ -13,15 +13,13 @@ The secret for the good performance is a combination of:
 
 - Chunking blocks of 16x16x16 cubes into a single game object, and dynamically generating the mesh (and collision mesh) on the fly
 
-- Heavily leveraging parallelism to optimize unrelated computations
+- Heavily leveraging parallelism to optimize unrelated computations: Burst and the Unity Job System
 
-- Offload as much work possible out of the main thread to avoid stutters
+- Offload as much work possible out of the main thread to avoid stutters: Again, the Unity Job System
 
 - Using the right internal representation for world data
   
-  
-  
-  The remainder of this readme is a detailed explanation about how this project was done.
+The remainder of this readme is a detailed explanation about how this project was done.
 
 ## Game Description
 
@@ -31,7 +29,7 @@ or take blocks on any position to create buildings.
 
 ### Controls
 
-| **Key Bindings** | Actions                                                               |
+| **Key Bindings** | **Actions**                                                           |
 | ---------------- | --------------------------------------------------------------------- |
 | WASD             | Move                                                                  |
 | Mouse Movement   | Move camera                                                           |
@@ -45,5 +43,38 @@ or take blocks on any position to create buildings.
 You can change the mouse sensibility from the Pause menu.
 
 You can see interesting stats about the game in the stats panel, like memory footprint, loaded chunks, pending jobs and so on.
+
+## Problem statement
+
+I started this project expecting that rendering so many cube objects would be expensive, 
+so to get a sense of how much I started with a simple program to fill a space of 64x64x16 
+with cloned cubes in Unity: 
+
+<img width="466" height="336" alt="image1" src="https://github.com/user-attachments/assets/d4fcf264-86d2-47f2-b408-efcb603e1ab5" />
+
+I only got **8 fps**. This world is equivalent to 4 squared chunks in Minecraft, it's quite small. 
+And yet it was already hard to move around the Unity editor.
+
+My next best idea was to use the [entity system](https://docs.unity3d.com/Packages/com.unity.entities@1.0/manual/index.html) from 
+[Unity DOTS](https://unity.com/es/dots). My understanding was that the entity system was designed to handle a huge entity count, the 
+engine could handle this problem automagically.
+
+I only got **30 FPS** on the Unity editor. It was good progress for very little effort, but the world was still small and if I wanted 
+to add more features in the future I would need more frame budget. 
+
+It also felt very silly to have a bunch of entities that... did nothing, there was no real logic running per cube, they just sat there
+and applied physics. If you think about it, the world modification logic is not really per cube, is something that interacts with the 
+world itself. 
+
+This made me think that maybe this wasn't the proper approach for this problem.  
+
+### Profiling 
+
+I went back to my basic world with 1 game object per cube and fired up the profiler. I wanted to have an informed perspective of what 
+was slowing down my game. It was clearly the shear amount of cubes but I wanted to know exactly what about them was generating the 
+problem. 
+
+
+
 
 
