@@ -97,11 +97,14 @@ Since the problem is having too many cubes, a direct solution would be to group 
 From now on, we define: 
 
 - **cube**: the smallest terrain unit
-- **chunk**: a spatial group of 16x16x16 cubes  
+- **chunk**: a spatial group of 16x16x16 cubes
+  
+<img width="800" height="600" alt="ubox(1)" src="https://github.com/user-attachments/assets/49e302e1-1d96-4d42-bd0d-eb4657ff5ca4" />
+
 
 This approach is overwhelmingly effective in reducing object count, but now we have to solve a new problem. **How can we represent many objects as a single one?**
 
-Note that 
+
 
 
 
