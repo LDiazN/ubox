@@ -87,7 +87,21 @@ So now our problem is reduced to: **How can we reduce the game object count in t
 
 ## Solution
 
+Since the problem is having too many cubes, a direct solution would be to group cubes into a single object, that we will call **chunk**. Let's say for now the chunk size is 
+16 x 16 x 16. Let's see what's the reduction in object count by doing this:   
 
+- 16 x 16 x 16 represents 4096 cubes, and therefore game objects
+- A chunk is a single game object
+- So we go from 4066 to 1, that's a 99.98% reduction in object count per chunk!
+
+From now on, we define: 
+
+- **cube**: the smallest terrain unit
+- **chunk**: a spatial group of 16x16x16 cubes  
+
+This approach is overwhelmingly effective in reducing object count, but now we have to solve a new problem. **How can we represent many objects as a single one?**
+
+Note that 
 
 
 
