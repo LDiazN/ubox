@@ -104,6 +104,24 @@ From now on, we define:
 
 This approach is overwhelmingly effective in reducing object count, but now we have to solve a new problem. **How can we represent many objects as a single one?**
 
+This is what we care about a cube: 
+
+- Type, so that we know what can or can't do with it and how to render it
+- Collider, so that the player can interact physically
+- Rendering, so that the player can see the cube. Includes mesh and material
+- Position, to properly place it
+
+If we split our internal representation of the world from the game objects used to render it, we can use the following strategy to merge cube into chunks: 
+
+- The world is internally represented as a collection of arrays, one per chunk. Each array has the type of the cubes within its chunk
+  - We use 1 byte to represent the types of cubes, saving some space
+- Each chunk has a custom collision mesh and a single mesh renderer
+- The mesh used for rendering and the collision is regenerated on the fly when:
+  - The chunk is rendered for the first time
+  - A cube within the chunk has changed
+
+
+
 
 
 
