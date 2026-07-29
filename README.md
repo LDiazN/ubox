@@ -113,8 +113,8 @@ This is what we care about a cube:
 
 If we split our internal representation of the world from the game objects used to render it, we can use the following strategy to merge cube into chunks: 
 
-- The world is internally represented as a collection of arrays, one per chunk. Each array has the type of the cubes within its chunk
-  - We use 1 byte to represent the types of cubes, saving some space
+- The world is internally represented as a collection of arrays, one per chunk. Each array has the types of the cubes within its chunk
+  - We use 1 byte to represent the types of cubes, saving some space. This affords us 255 cube types, not a lot but is easy to increase to 2
 - Each chunk has a custom collision mesh and a single mesh renderer
 - The mesh used for rendering and the collision is regenerated on the fly when:
   - The chunk is rendered for the first time
