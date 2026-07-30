@@ -87,17 +87,20 @@ So now our problem is reduced to: **How can we reduce the game object count in t
 
 ## Solution
 
-Since the problem is having too many cubes, a direct solution would be to group cubes into a single object, that we will call **chunk**. Let's say for now the chunk size is 
-16 x 16 x 16. Let's see what's the reduction in object count by doing this:   
-
-- 16 x 16 x 16 represents 4096 cubes, and therefore game objects
-- A chunk is a single game object
-- So we go from 4066 to 1, that's a 99.98% reduction in object count per chunk!
+Since the problem is having too many cubes, a direct solution would be to group cubes into a single object, that we will call **chunk**.
 
 From now on, we define: 
 
 - **cube**: the smallest terrain unit
 - **chunk**: a spatial group of 16x16x16 cubes
+
+Let's say for now the chunk size is 
+16 x 16 x 16. Let's see what's the reduction in object count by doing this:   
+
+- 16 x 16 x 16 represents 4096 cubes, and therefore game objects
+- A chunk is a single game object
+- So we go from 4096 to 1, that's a 99.98% reduction in object count per chunk!
+
   
 <img width="800" height="600" alt="ubox(1)" src="https://github.com/user-attachments/assets/49e302e1-1d96-4d42-bd0d-eb4657ff5ca4" />
 
@@ -114,11 +117,33 @@ This is what we care about a cube:
 If we split our internal representation of the world from the game objects used to render it, we can use the following strategy to merge cube into chunks: 
 
 - The world is internally represented as a collection of arrays, one per chunk. Each array has the types of the cubes within its chunk
-  - We use 1 byte to represent the types of cubes, saving some space. This affords us 255 cube types, not a lot but is easy to increase to 2
+  - We use 1 byte to represent the types of cubes, saving some space. This affords us 256 cube types, not a lot but is easy to increase to 2 bytes for 65536 cube types
+  - You get the type of a cube from its world position by computing its chunk's position and the offset within that chunk  
 - Each chunk has a custom collision mesh and a single mesh renderer
 - The mesh used for rendering and the collision is regenerated on the fly when:
   - The chunk is rendered for the first time
   - A cube within the chunk has changed
+
+Let's think about the world structure for a moment. If you think about it, there's always a cube in every integer position at any given time. Some are just 'air', 
+blocks that can be traversed by the player. 
+
+If we think like that, we can start treating the position of a cube as its reference. Every time we want to get the data of a single cube, we do so by its position. This is a
+powerful property because it allows us to imagine the world as infinite, while the cubes don't actually exist on memory or are not loaded from disk. 
+
+This structure also allows us to only have some data of the cubes loaded or used for some processes. For example, generating the mesh only requires the `type` data, nothing more. 
+This way we optimize cache usage. 
+
+Finally, the solution goes as follows: 
+
+- The world is represented with PODs, not with Game Objects. Those are used for **rendering** the world.
+- Terrain is divided in chunks
+- When a chunk is loaded, the corresponding mesh is generated on the fly representing the blocks within the chunk
+- A manager objects constantly checks the player position to decide which chunks should be loaded or unloaded 
+  - Chunks are managed through an object pool, to reduce creations and destructions
+- The world manager also generates the world while the player is discovering it
+  - The "world" here means the internal representation based on PODs
+ 
+
 
 
 
