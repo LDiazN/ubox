@@ -158,6 +158,12 @@ In fact just the Burst compilation reduced the chunk mesh building time **in hal
 |---|---|
 | No Burst | Burst |
 
+_Some times indicate 0ms because they are constructing and empty mesh. This is just an illustrative metric._
+
+The next screenshot shows the worker threads with full utilization building meshes:  
+
+<img width="1911" height="1020" alt="image8" src="https://github.com/user-attachments/assets/0933f904-9d71-4806-ad49-aed1ccb1d258" />
+
 
 
 
