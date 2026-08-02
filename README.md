@@ -164,8 +164,24 @@ The next screenshot shows the worker threads with full utilization building mesh
 
 <img width="1911" height="1020" alt="image8" src="https://github.com/user-attachments/assets/0933f904-9d71-4806-ad49-aed1ccb1d258" />
 
+## Architecture
 
+Given the nature of the game, we decided to go for a [data oriented](https://en.wikipedia.org/wiki/Data-oriented_design) approach for the world representation. This means that chunks are not stored as an array of structs, but a [struct of arrays](https://en.wikipedia.org/wiki/AoS_and_SoA).  
 
+The main classes in charge of terrain generation are:
 
+- **ChunkMap:** The main data structure representing the world. It's a table mapping `int3` positions to their properties. In our case we only have a type. It's implemented as a native dictionary. 
+  - A cube's position is used as its ID. Remember, 1 position = 1 cube. With the position we lookup its properties
+  - We store chunks, no cubes, but a cube's data can be retrieved by looking up its chunk and then the block by its offset within the chunk
+  - Adding new properties to cubes by adding a new map within the `ChunkMap` with the same structure. This is great for optional data, as you don't have to create the chunk if the data is unset.  
+  - A chunk is a 3D data structure, but its data is stored in a plain array, with some utility functions to access the data as a 3D array.
+  - Thanks to this approach, functions that iterate over all the cube types of the world can only load the data they need, optimizing cache usage
+    - This works due to our access patterns, different programs with different access patterns might perform poorly
+  - I didn't implement it but this data structure is good for loading/unloading to/from disk unused data
+  - The type is represented as a **single byte**, this affords us 256 block types (including a null one), but it reduces memory usage a lot over the default Enum size (4 bytes). Every chunk is 4KB of memory (16^3)
 
+Representation of the map of chunk types within the `ChunkMap`:
 
+<img width="275" height="88" alt="image3" src="https://github.com/user-attachments/assets/a888bf29-b05c-4bdb-9e8a-d60987c72834" />
+
+  
