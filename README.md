@@ -135,7 +135,7 @@ This way we optimize cache usage.
 
 Finally, the solution goes as follows: 
 
-- The world is represented with PODs, not with Game Objects. Those are used for **rendering** the world.
+- The world is represented with [PODs](https://en.wikipedia.org/wiki/Passive_data_structure), not with Game Objects. Those are used for **rendering** the world.
 - Terrain is divided in chunks
 - When a chunk is loaded, the corresponding mesh is generated on the fly representing the blocks within the chunk
 - A manager objects constantly checks the player position to decide which chunks should be loaded or unloaded 
@@ -143,9 +143,20 @@ Finally, the solution goes as follows:
 - The world manager also generates the world while the player is discovering it
   - The "world" here means the internal representation based on PODs
  
+### Fast sometimes
 
+This solution was quite effective on the rendering side, when the world is fully loaded the frame rate is very good and stable. However when the player tries to move or modify the world 
+we got sever stutters. This was due to the high load on the main thread due to building meshes and generating the world. 
 
+Making this significantly faster so that stutters were impossible didn't seem realistic, mostly because the process itself was fast, it was just called many times: One per rendered chunk. So the next best thing was to **move computation out of the main thread**. 
 
+For this we leveraged [Unity's Job System](https://docs.unity3d.com/6000.3/Documentation/Manual/job-system-overview.html) and [Burst](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/index.html). The idea behind the job system is that you can send expensive function calls to a pool of worker threads, and it would get executed in parallel to the main thread (And each other!). On top of that, the Burst compiler allows you to compile your job code into native code, which runs faster than C#'s byte code. For this to work we also used native data structures: `NativeArray`, `NativeHashmpa`, `float3`, `int3`.
+
+In fact just the Burst compilation reduced the chunk mesh building time **in half**!
+
+| <img src="https://github.com/user-attachments/assets/f227f2b0-12c9-4a45-8cb7-e7d342cc3ac6" width="316" height="287" /> | <img src="https://github.com/user-attachments/assets/612de6f2-2443-4714-8f15-2dd73cfe6602" width="282" height="241" /> |
+|---|---|
+| No Burst | Burst |
 
 
 
