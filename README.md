@@ -164,6 +164,9 @@ The next screenshot shows the worker threads with full utilization building mesh
 
 <img width="1911" height="1020" alt="image8" src="https://github.com/user-attachments/assets/0933f904-9d71-4806-ad49-aed1ccb1d258" />
 
+Note that this approach to parallel computing is not ideal for every situation. If the game logic requires immediate access to things that are executed on background, you can 
+get consistency errors. In this case our solution works because background tasks only touch terrain that is far away from the player most of the time.  
+
 ## Architecture
 
 Given the nature of the game, we decided to go for a [data oriented](https://en.wikipedia.org/wiki/Data-oriented_design) approach for the world representation. This means that chunks are not stored as an array of structs, but a [struct of arrays](https://en.wikipedia.org/wiki/AoS_and_SoA).  
@@ -180,8 +183,48 @@ The main classes in charge of terrain generation are:
   - I didn't implement it but this data structure is good for loading/unloading to/from disk unused data
   - The type is represented as a **single byte**, this affords us 256 block types (including a null one), but it reduces memory usage a lot over the default Enum size (4 bytes). Every chunk is 4KB of memory (16^3)
 
-Representation of the map of chunk types within the `ChunkMap`:
+A chunk map looks like this: 
+```
+struct ChunkMap {
+  types : Map<int3, Array3D<ChunkType>[16^3]>
+}
+```
 
 <img width="275" height="88" alt="image3" src="https://github.com/user-attachments/assets/a888bf29-b05c-4bdb-9e8a-d60987c72834" />
 
-  
+- **ChunkManager:** a `MonoBehaviour` that implements chunk loading and unloading, based on the player position and render view distance.
+  - Since many things are done in parallel, this class is in charge of bookkeeping. It checks which tasks are done and terrain changes that haven't taken effect yet
+  - When a player puts/takes a cube, it modifies the `ChunkMap` and notifies the corresponding `ChunkRenderer` that it should update itself
+  - The chunk renderer update can be slow as well. If the player tries to modify a chunk that is still WIP, the change is noted down and queued
+  - Change may not be immediate
+  - Offers an API for other classes to modify the world
+  - When an unknown chunk is needed, it runs the procedural generation algorithm to fill it, in background
+
+- **ChunkRenderer:** A `MonoBehaviour` that implements the mesh generation and renders it using a `MeshRenderer`.
+  - Computes the new mesh on background.
+  - If several changes are received while the mesh is still generating, these are enqueued.
+  - Creation and destruction is implemented using object pooling
+ 
+## Procedural Generation
+
+Procedural generation is very simple, it's implemented by sampling simplex noise using the XZ coordinates of each cube, and using the result as height map: If the Y coordinate
+is lower than this height, the cube is solid. 
+
+This method has an interesting property: to generate a cube, you **don't need information about its neighbors**. This makes the generation trivial to parallelize. If you need to know
+if another cube will be solid, you can sample its position as well, without having to access its memory.
+
+Example Simplex noise texture (from [Wikipedia](https://en.wikipedia.org/wiki/Simplex_noise)):
+
+
+<img width="256" height="256" alt="image" src="https://github.com/user-attachments/assets/7ab52884-2145-49bb-b8ff-4089658d42c3" />
+
+
+We mark as "Grass" cubes that don't have any solid cube on top of them.   
+
+New chunks are generated as the player discovers them. 
+
+The generation is actually very fast, but there's usually many chunks generating at the same time. This can generate stutters, and that's why the generation runs on background.
+
+## Mesh generation 
+
+
