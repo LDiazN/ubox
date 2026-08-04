@@ -235,3 +235,6 @@ The mesh generation algorithm went through several iterations until I got one wi
 
 An important reason for this process to be fast is that since it runs on background, it can generate **weird graphics and physics bugs** if it takes too long.
 
+The tricky part of generating the mesh is maintaining the structure of the index buffer when choosing only visible faces. The solution we chose was to allocate the full vertices of each cube, and then we only add to the index buffers the indexes of the visible faces. This approach wastes some vertices, but at the least they wont be rendered due to the index buffer structure. 
+
+
