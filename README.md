@@ -248,4 +248,18 @@ Due to Unity's technical limitations, we can't allocate GPU memory in a thread t
 - **Index count** will count how many vertices and indices we will need. The result is sent to the main thread, where a new mesh is allocated and passed to the next task.
 - **Buffer generation** will take the buffer allocated on the main thread and fill it using the approach mentioned above. Then the main thread will update the previous mesh with this one.
 
+## Conclusions
 
+This was a fun little project that took me ~5 days and I learned a lot, I want to note down some of the lessons I got: 
+
+- This should be obvious by now but this project was a good reminder: **Never choke the main thread**, always move IO or expensive computations to a different thread. Even if a process doesn't run every frame it's good to send it to a background thread if it risks choking the main thread
+- Profile first: It can be daunting to find a performance bottleneck without the profiler, the profiler will always tell you the first place to look at. Everything else is close to guessing
+- You don't have to bind your internal game representation to Unity game objects. You can roll your own representation and use game objects as a way to render that into the screen.
+- If something doesn't require same-frame or near-same-frame interactivity, you can send it to another thread to offload a lot of work from the main thread
+- Unity is not really great for dynamic mesh generation. The sync step where tasks have to go back to the main thread to allocate GPU memory is still a choke point that I couldn't workaround
+  - On that lane, Unity wasn't really useful for this project in particular, a lot of the tools that carried the project bypass key properties of Unity. Burst compiles to native code instead of C# code for example, the job system relies on non-managed data structures. The most helpful Unity feature was the profiler
+- The first cube I could place was a magical moment. I could see what Notch was thinking when he was making Minecraft!
+
+<img width="1344" height="751" alt="image" src="https://github.com/user-attachments/assets/da3c44bd-9732-40de-bd63-230e34b32b60" />
+
+This was the first house I built with my own game :)
