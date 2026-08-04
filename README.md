@@ -237,4 +237,15 @@ An important reason for this process to be fast is that since it runs on backgro
 
 The tricky part of generating the mesh is maintaining the structure of the index buffer when choosing only visible faces. The solution we chose was to allocate the full vertices of each cube, and then we only add to the index buffers the indexes of the visible faces. This approach wastes some vertices, but at the least they wont be rendered due to the index buffer structure. 
 
+The next problem to solve was textures. Since we only have a single object that represents many, we have to find a way to paint it with many textures. For this we use an atlas, a texture with many textures embedded. The atlas is built in a way such that textures are lined up on the Y axis, and when creating a cube, its UVs are scaled and moved in the Y axis to fit its corresponding texture position. 
+
+<img width="612" height="379" alt="Atlas Texture" src="https://github.com/user-attachments/assets/ec5a8be6-5a85-482f-a217-c712bb40f68b" />
+
+This way is not necessary to implement a new shader or material, the material that works for a single cube works for a block as well. We don't add any additional attributes to vertices either. 
+
+Due to Unity's technical limitations, we can't allocate GPU memory in a thread that is not the main thread. As a result, this algorithm is split in two parts: **index count** and **buffer generation**. Both are done on background threads. 
+
+- **Index count** will count how many vertices and indices we will need. The result is sent to the main thread, where a new mesh is allocated and passed to the next task.
+- **Buffer generation** will take the buffer allocated on the main thread and fill it using the approach mentioned above. Then the main thread will update the previous mesh with this one.
+
 
