@@ -227,4 +227,11 @@ The generation is actually very fast, but there's usually many chunks generating
 
 ## Mesh generation 
 
+The mesh generation algorithm went through several iterations until I got one with good performance:
+
+1. Merge all cube meshes into the same mesh: Too slow, too much geometry. A full chunk with all the cubes has 16^3 cubes, each cube has 12 triangles, so this mesh had 4096 * 12 = **49152** triangles per chunk. The reference world of 64x64x16 had **786432** triangles. The real problem is that most of this geometry is **invisible** and will never be visible, it's inside the chunk itself.
+2. Only take cubes that are in the outer layer of a chunk: A lot better but still unable to get 60 FPS reliably on Unity. This reduced the triangle count quite a lot, going back to the full chunk example: 16^3 - 14^3 = 1352 cubes, 1352 * 12 triangles = **16224** triangles, this is a reduction of **67%** in triangle count.
+3. Only take visible faces: This was a bit harder to code but it had the best performance by far and is the current implementation. The triangle count is: 16 * 16 * 6 faces * 2 triangles = **3072**, this is a reduction of **93.8%** from our original number, it even achieved more that **200 FPS** on a build. 
+
+An important reason for this process to be fast is that since it runs on background, it can generate **weird graphics and physics bugs** if it takes too long.
 
