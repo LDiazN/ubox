@@ -6,7 +6,7 @@ Ubox is a Minecraft-like demo game that shows how to render an infinite voxel wo
 It's made in Unity and achieves nearly 300 FPS on my machine in a world of 256 * 256 * 32 = **2 097 152** 
 cubes. 
 
-The world is generated procedurally using a simple noise-sampling algorithm to generate a height map, it's 
+The world is generated procedurally using a simple noise-sampling algorithm to generate a height map. It's 
 infinite in all directions.
 
 The secret for the good performance is a combination of: 
@@ -40,7 +40,7 @@ or take blocks on any position to create buildings.
 | ESC              | Pause / Resume                                                        |
 | Tab              | Stats panel                                                           |
 
-You can change the mouse sensibility from the Pause menu.
+You can change the mouse sensitivity from the Pause menu.
 
 You can see interesting stats about the game in the stats panel, like memory footprint, loaded chunks, pending jobs and so on.
 
@@ -62,8 +62,8 @@ engine could handle this problem automagically.
 I only got **30 FPS** on the Unity editor. It was good progress for very little effort, but the world was still small and if I wanted 
 to add more features in the future I would need more frame budget. 
 
-It also felt very silly to have a bunch of entities that... did nothing, there was no real logic running per cube, they just sat there
-and applied physics. If you think about it, the world modification logic is not really per cube, is something that interacts with the 
+It also felt very silly to have a bunch of entities that... did nothing. There was no real logic running per cube, they just sat there
+and applied physics. If you think about it, the world modification logic is not really per cube, it's something that interacts with the 
 world itself. 
 
 This made me think that maybe this wasn't the proper approach for this problem.  
@@ -71,16 +71,16 @@ This made me think that maybe this wasn't the proper approach for this problem.
 ### Profiling 
 
 I went back to my basic world with 1 game object per cube and fired up the **profiler**. I wanted to have an informed perspective of what 
-was slowing down my game. It was clearly the shear amount of cubes but I wanted to know exactly what about them was generating the 
+was slowing down my game. It was clearly the sheer amount of cubes but I wanted to know exactly what about them was generating the 
 problem. 
-a
+
 <img width="1634" height="911" alt="image6" src="https://github.com/user-attachments/assets/10c1f595-fd0b-4efd-810c-475aacae69f2" /> 
 
 1. `Gfx.WaitForGfxCommandsFromMainThread`: This is the key part, it tells us that the render thread is waiting for rendering instructions. It wastes a lot of time in this state.
-2. Tehn we can see that every worker thread is doing some processing related to rendering. This is CPU work that needs to be done before sending GPU commands.
+2. Then we can see that every worker thread is doing some processing related to rendering. This is CPU work that needs to be done before sending GPU commands.
 3. `WaitForJobGroupID` means that the main thread is waiting for work that it's being executed in worker threads.
 
-From this profiling we reach the following conclusion: **Our program is CPU-bound**, not GPU-boud. Our bad framerate derives from the CPU not sending
+From this profiling we reach the following conclusion: **Our program is CPU-bound**, not GPU-bound. Our bad framerate derives from the CPU not sending
 data to the GPU fast enough, not due to the GPU having too much work. This is for sure due to the high game object count we have at any moment, the objects themselves are already quite simple.
 
 So now our problem is reduced to: **How can we reduce the game object count in the game to reduce CPU pressure?**
@@ -107,14 +107,14 @@ Let's say for now the chunk size is
 
 This approach is overwhelmingly effective in reducing object count, but now we have to solve a new problem. **How can we represent many objects as a single one?**
 
-This is what we care about a cube: 
+This is what we care about in a cube: 
 
 - Type, so that we know what can or can't do with it and how to render it
 - Collider, so that the player can interact physically
 - Rendering, so that the player can see the cube. Includes mesh and material
 - Position, to properly place it
 
-If we split our internal representation of the world from the game objects used to render it, we can use the following strategy to merge cube into chunks: 
+If we split our internal representation of the world from the game objects used to render it, we can use the following strategy to merge cubes into chunks: 
 
 - The world is internally represented as a collection of arrays, one per chunk. Each array has the types of the cubes within its chunk
   - We use 1 byte to represent the types of cubes, saving some space. This affords us 256 cube types, not a lot but is easy to increase to 2 bytes for 65536 cube types
@@ -124,7 +124,7 @@ If we split our internal representation of the world from the game objects used 
   - The chunk is rendered for the first time
   - A cube within the chunk has changed
 
-Let's think about the world structure for a moment. If you think about it, there's always a cube in every integer position at any given time. Some are just 'air', 
+Let's think about the world structure for a moment. If you think about it, there's always a cube in every integer position at any given time. Some are just 'air' 
 blocks that can be traversed by the player. 
 
 If we think like that, we can start treating the position of a cube as its reference. Every time we want to get the data of a single cube, we do so by its position. This is a
@@ -138,7 +138,7 @@ Finally, the solution goes as follows:
 - The world is represented with [PODs](https://en.wikipedia.org/wiki/Passive_data_structure), not with Game Objects. Those are used for **rendering** the world.
 - Terrain is divided in chunks
 - When a chunk is loaded, the corresponding mesh is generated on the fly representing the blocks within the chunk
-- A manager objects constantly checks the player position to decide which chunks should be loaded or unloaded 
+- A manager object constantly checks the player position to decide which chunks should be loaded or unloaded 
   - Chunks are managed through an object pool, to reduce creations and destructions
 - The world manager also generates the world while the player is discovering it
   - The "world" here means the internal representation based on PODs
@@ -146,11 +146,11 @@ Finally, the solution goes as follows:
 ### Fast sometimes
 
 This solution was quite effective on the rendering side, when the world is fully loaded the frame rate is very good and stable. However when the player tries to move or modify the world 
-we got sever stutters. This was due to the high load on the main thread due to building meshes and generating the world. 
+we got severe stutters. This was due to the high load on the main thread due to building meshes and generating the world. 
 
 Making this significantly faster so that stutters were impossible didn't seem realistic, mostly because the process itself was fast, it was just called many times: One per rendered chunk. So the next best thing was to **move computation out of the main thread**. 
 
-For this we leveraged [Unity's Job System](https://docs.unity3d.com/6000.3/Documentation/Manual/job-system-overview.html) and [Burst](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/index.html). The idea behind the job system is that you can send expensive function calls to a pool of worker threads, and it would get executed in parallel to the main thread (And each other!). On top of that, the Burst compiler allows you to compile your job code into native code, which runs faster than C#'s byte code. For this to work we also used native data structures: `NativeArray`, `NativeHashmpa`, `float3`, `int3`.
+For this we leveraged [Unity's Job System](https://docs.unity3d.com/6000.3/Documentation/Manual/job-system-overview.html) and [Burst](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/index.html). The idea behind the job system is that you can send expensive function calls to a pool of worker threads, and it would get executed in parallel to the main thread (And each other!). On top of that, the Burst compiler allows you to compile your job code into native code, which runs faster than C#'s byte code. For this to work we also used native data structures: `NativeArray`, `NativeHashMap`, `float3`, `int3`.
 
 In fact just the Burst compilation reduced the chunk mesh building time **in half**!
 
@@ -158,25 +158,25 @@ In fact just the Burst compilation reduced the chunk mesh building time **in hal
 |---|---|
 | No Burst | Burst |
 
-_Some times indicate 0ms because they are constructing and empty mesh. This is just an illustrative metric._
+_Some times indicate 0ms because they are constructing an empty mesh. This is just an illustrative metric._
 
 The next screenshot shows the worker threads with full utilization building meshes:  
 
 <img width="1911" height="1020" alt="image8" src="https://github.com/user-attachments/assets/0933f904-9d71-4806-ad49-aed1ccb1d258" />
 
-Note that this approach to parallel computing is not ideal for every situation. If the game logic requires immediate access to things that are executed on background, you can 
+Note that this approach to parallel computing is not ideal for every situation. If the game logic requires immediate access to things that are executed in the background, you can 
 get consistency errors. In this case our solution works because background tasks only touch terrain that is far away from the player most of the time.  
 
 ## Architecture
 
-Given the nature of the game, we decided to go for a [data oriented](https://en.wikipedia.org/wiki/Data-oriented_design) approach for the world representation. This means that chunks are not stored as an array of structs, but a [struct of arrays](https://en.wikipedia.org/wiki/AoS_and_SoA).  
+Given the nature of the game, we decided to go for a [data oriented](https://en.wikipedia.org/wiki/Data-oriented_design) approach for the world representation. This means that chunks are not stored as an array of structs, but as a [struct of arrays](https://en.wikipedia.org/wiki/AoS_and_SoA).  
 
 The main classes in charge of terrain generation are:
 
 - **ChunkMap:** The main data structure representing the world. It's a table mapping `int3` positions to their properties. In our case we only have a type. It's implemented as a native dictionary. 
   - A cube's position is used as its ID. Remember, 1 position = 1 cube. With the position we lookup its properties
-  - We store chunks, no cubes, but a cube's data can be retrieved by looking up its chunk and then the block by its offset within the chunk
-  - Adding new properties to cubes by adding a new map within the `ChunkMap` with the same structure. This is great for optional data, as you don't have to create the chunk if the data is unset.  
+  - We store chunks, not cubes, but a cube's data can be retrieved by looking up its chunk and then the block by its offset within the chunk
+  - We add new properties to cubes by adding a new map within the `ChunkMap` with the same structure. This is great for optional data, as you don't have to create the chunk if the data is unset.  
   - A chunk is a 3D data structure, but its data is stored in a plain array, with some utility functions to access the data as a 3D array.
   - Thanks to this approach, functions that iterate over all the cube types of the world can only load the data they need, optimizing cache usage
     - This works due to our access patterns, different programs with different access patterns might perform poorly
@@ -193,7 +193,7 @@ struct ChunkMap {
 <img width="275" height="88" alt="image3" src="https://github.com/user-attachments/assets/a888bf29-b05c-4bdb-9e8a-d60987c72834" />
 
 - **ChunkManager:** a `MonoBehaviour` that implements chunk loading and unloading, based on the player position and render view distance.
-  - Since many things are done in parallel, this class is in charge of bookkeeping. It checks which tasks are done and terrain changes that haven't taken effect yet
+  - Since many things are done in parallel, this class is in charge of bookkeeping. It checks which tasks are done and which terrain changes haven't taken effect yet
   - When a player puts/takes a cube, it modifies the `ChunkMap` and notifies the corresponding `ChunkRenderer` that it should update itself
   - The chunk renderer update can be slow as well. If the player tries to modify a chunk that is still WIP, the change is noted down and queued
   - Change may not be immediate
@@ -201,7 +201,7 @@ struct ChunkMap {
   - When an unknown chunk is needed, it runs the procedural generation algorithm to fill it, in background
 
 - **ChunkRenderer:** A `MonoBehaviour` that implements the mesh generation and renders it using a `MeshRenderer`.
-  - Computes the new mesh on background.
+  - Computes the new mesh in the background.
   - If several changes are received while the mesh is still generating, these are enqueued.
   - Creation and destruction is implemented using object pooling
  
@@ -223,7 +223,7 @@ We mark as "Grass" cubes that don't have any solid cube on top of them.
 
 New chunks are generated as the player discovers them. 
 
-The generation is actually very fast, but there's usually many chunks generating at the same time. This can generate stutters, and that's why the generation runs on background.
+The generation is actually very fast, but there are usually many chunks generating at the same time. This can generate stutters, and that's why the generation runs in the background.
 
 ## Mesh generation 
 
@@ -231,17 +231,17 @@ The mesh generation algorithm went through several iterations until I got one wi
 
 1. Merge all cube meshes into the same mesh: Too slow, too much geometry. A full chunk with all the cubes has 16^3 cubes, each cube has 12 triangles, so this mesh had 4096 * 12 = **49152** triangles per chunk. The reference world of 64x64x16 had **786432** triangles. The real problem is that most of this geometry is **invisible** and will never be visible, it's inside the chunk itself.
 2. Only take cubes that are in the outer layer of a chunk: A lot better but still unable to get 60 FPS reliably on Unity. This reduced the triangle count quite a lot, going back to the full chunk example: 16^3 - 14^3 = 1352 cubes, 1352 * 12 triangles = **16224** triangles, this is a reduction of **67%** in triangle count.
-3. Only take visible faces: This was a bit harder to code but it had the best performance by far and is the current implementation. The triangle count is: 16 * 16 * 6 faces * 2 triangles = **3072**, this is a reduction of **93.8%** from our original number, it even achieved more that **200 FPS** on a build. 
+3. Only take visible faces: This was a bit harder to code but it had the best performance by far and is the current implementation. The triangle count is: 16 * 16 * 6 faces * 2 triangles = **3072**, this is a reduction of **93.8%** from our original number, it even achieved more than **200 FPS** on a build. 
 
-An important reason for this process to be fast is that since it runs on background, it can generate **weird graphics and physics bugs** if it takes too long.
+An important reason for this process to be fast is that since it runs in the background, it can generate **weird graphics and physics bugs** if it takes too long.
 
-The tricky part of generating the mesh is maintaining the structure of the index buffer when choosing only visible faces. The solution we chose was to allocate the full vertices of each cube, and then we only add to the index buffers the indexes of the visible faces. This approach wastes some vertices, but at the least they wont be rendered due to the index buffer structure. 
+The tricky part of generating the mesh is maintaining the structure of the index buffer when choosing only visible faces. The solution we chose was to allocate the full vertices of each cube, and then we only add to the index buffers the indexes of the visible faces. This approach wastes some vertices, but at least they won't be rendered due to the index buffer structure. 
 
 The next problem to solve was textures. Since we only have a single object that represents many, we have to find a way to paint it with many textures. For this we use an atlas, a texture with many textures embedded. The atlas is built in a way such that textures are lined up on the Y axis, and when creating a cube, its UVs are scaled and moved in the Y axis to fit its corresponding texture position. 
 
 <img width="612" height="379" alt="Atlas Texture" src="https://github.com/user-attachments/assets/ec5a8be6-5a85-482f-a217-c712bb40f68b" />
 
-This way is not necessary to implement a new shader or material, the material that works for a single cube works for a block as well. We don't add any additional attributes to vertices either. 
+This way, it's not necessary to implement a new shader or material; the material that works for a single cube works for a block as well. We don't add any additional attributes to vertices either. 
 
 Due to Unity's technical limitations, we can't allocate GPU memory in a thread that is not the main thread. As a result, this algorithm is split in two parts: **index count** and **buffer generation**. Both are done on background threads. 
 
